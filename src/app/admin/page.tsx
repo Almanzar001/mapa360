@@ -25,6 +25,48 @@ const AdminPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
   
+  // Función para comprimir imagen 360° en el frontend
+  const compressImage360 = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Determinar tamaño objetivo manteniendo proporción 2:1
+        let targetWidth = img.width;
+        let targetHeight = img.height;
+        
+        if (img.width > 4096) {
+          targetWidth = 4096;
+          targetHeight = 2048;
+        }
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        // Dibujar imagen redimensionada
+        ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
+        
+        // Convertir a blob con compresión
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            reject(new Error('Error al comprimir imagen'));
+          }
+        }, 'image/jpeg', 0.8); // 80% calidad
+      };
+      
+      img.onerror = () => reject(new Error('Error al cargar imagen para compresión'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+  
   const [previewImagenes, setPreviewImagenes] = useState<string[]>([]);
   const [preview360, setPreview360] = useState<string>('');
 
@@ -177,8 +219,21 @@ const AdminPage: React.FC = () => {
           throw new Error(`Imagen 360° es muy grande (${(size / 1024 / 1024).toFixed(1)}MB). Máximo 50MB - se optimizará automáticamente.`);
         }
         
-        if (size > 20 * 1024 * 1024) {
-          console.warn('⚠️ Imagen 360° grande detectada - se optimizará durante el procesamiento');
+        if (size > 15 * 1024 * 1024) {
+          console.warn('⚠️ Imagen 360° grande detectada - se comprimirá antes del envío');
+          
+          // Comprimir imagen 360° en el frontend
+          setMensaje({ tipo: 'success', texto: 'Comprimiendo imagen 360° para optimizar carga...' });
+          
+          try {
+            const compressedFile = await compressImage360(formulario.imagen360);
+            formulario.imagen360 = compressedFile;
+            console.log(`Imagen 360° comprimida: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+          } catch (error) {
+            console.error('Error al comprimir imagen 360°:', error);
+            setMensaje({ tipo: 'error', texto: 'Error al comprimir imagen 360°. Intenta con una imagen más pequeña.' });
+            return;
+          }
         }
       }
 
@@ -203,51 +258,23 @@ const AdminPage: React.FC = () => {
         formData.append('imagen360', formulario.imagen360);
       }
 
-      // Enviar a API con timeout apropiado para imágenes grandes
-      const hasLargeImages = formulario.imagen360 && formulario.imagen360.size > 10 * 1024 * 1024;
-      const timeoutMs = hasLargeImages ? 180000 : 60000; // 3 minutos para imágenes grandes
-      
-      console.log(`Enviando al servidor... ${hasLargeImages ? '(procesando imagen 360° grande)' : ''}`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      // Enviar a API (imágenes ya optimizadas en frontend)
+      setMensaje({ tipo: 'success', texto: 'Enviando al servidor...' });
+      console.log('Enviando FormData optimizado al servidor...');
 
-      try {
-        const response = await fetch('/api/ubicaciones/agregar', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeoutId);
+      const response = await fetch('/api/ubicaciones/agregar', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
 
-        if (!response.ok) {
-          let errorMessage = 'Error al guardar ubicación';
-          
-          if (response.status === 502) {
-            errorMessage = 'El servidor no pudo procesar las imágenes. La imagen 360° se está optimizando, esto puede tardar unos minutos.';
-          } else {
-            try {
-              const error = await response.json();
-              errorMessage = error.error || errorMessage;
-            } catch (e) {
-              errorMessage = `Error ${response.status}: ${response.statusText}`;
-            }
-          }
-          
-          throw new Error(errorMessage);
-        }
-
-        const result = await response.json();
-        console.log('Ubicación guardada exitosamente:', result);
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        if (fetchError.name === 'AbortError') {
-          throw new Error('El procesamiento de la imagen 360° está tardando mucho. Intenta con una imagen más pequeña o espera unos minutos.');
-        }
-        throw fetchError;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al guardar ubicación');
       }
+
+      const result = await response.json();
+      console.log('Ubicación guardada exitosamente:', result);
 
       setMensaje({ tipo: 'success', texto: '¡Ubicación agregada exitosamente!' });
       

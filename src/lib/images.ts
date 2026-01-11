@@ -20,35 +20,11 @@ export function validarImagen360(width: number, height: number): boolean {
  * Optimiza imagen 360° para web
  */
 export async function optimizarImagen360(buffer: Buffer): Promise<Buffer> {
-  // Obtener dimensiones originales
-  const metadata = await sharp(buffer).metadata();
-  const { width = 0, height = 0 } = metadata;
-  
-  // Determinar el tamaño óptimo manteniendo proporción 2:1
-  let targetWidth = width;
-  let targetHeight = height;
-  
-  // Si es muy grande, reducir manteniendo calidad para 360°
-  if (width > 6144) {
-    targetWidth = 6144;
-    targetHeight = 3072;
-  } else if (width > 4096) {
-    targetWidth = 4096;
-    targetHeight = 2048;
-  }
-  
-  console.log(`Optimizando 360°: ${width}x${height} → ${targetWidth}x${targetHeight}`);
-  
+  // Optimización ligera para imágenes ya procesadas en frontend
   return await sharp(buffer)
-    .resize(targetWidth, targetHeight, {
-      fit: 'fill', // Mantener exactamente 2:1 para 360°
-      kernel: sharp.kernel.lanczos3 // Mejor algoritmo para redimensionar
-    })
     .jpeg({
-      quality: 85, // Mejor calidad para 360°
-      progressive: true,
-      mozjpeg: true, // Compresión más eficiente
-      optimizeScans: true
+      quality: 90, // Alta calidad ya que viene pre-optimizada
+      progressive: true
     })
     .toBuffer();
 }
@@ -100,21 +76,13 @@ export async function subirImagenANocoDB(
     const blob = new Blob([uint8Array], { type: 'image/jpeg' });
     formData.append('file', blob, fileName);
 
-    // Timeout mayor para imágenes 360°
-    const controller = new AbortController();
-    const timeoutMs = isImage360 ? 120000 : 45000; // 2 minutos para 360°
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
     const response = await fetch(`${NOCODB_BASE_URL}/api/v1/db/storage/upload`, {
       method: 'POST',
       headers: {
         'xc-token': NOCODB_API_TOKEN || '',
       },
       body: formData,
-      signal: controller.signal,
     });
-    
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
