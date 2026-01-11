@@ -24,6 +24,28 @@ const AdminPage: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+  
+  const testConnection = async () => {
+    try {
+      const response = await fetch('/api/test', {
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      console.log('Test result:', result);
+      
+      setMensaje({
+        tipo: response.ok ? 'success' : 'error',
+        texto: response.ok ? `Conexión OK: ${result.user?.email}` : `Error: ${result.error}`
+      });
+    } catch (error) {
+      console.error('Test failed:', error);
+      setMensaje({
+        tipo: 'error',
+        texto: `Test failed: ${error.message}`
+      });
+    }
+  };
   const [previewImagenes, setPreviewImagenes] = useState<string[]>([]);
   const [preview360, setPreview360] = useState<string>('');
 
@@ -234,9 +256,10 @@ const AdminPage: React.FC = () => {
       if (image360InputRef.current) image360InputRef.current.value = '';
 
     } catch (error) {
+      console.error('Error completo al guardar ubicación:', error);
       setMensaje({ 
         tipo: 'error', 
-        texto: error instanceof Error ? error.message : 'Error desconocido' 
+        texto: error instanceof Error ? error.message : 'Error desconocido'
       });
     } finally {
       setLoading(false);
@@ -535,6 +558,13 @@ const AdminPage: React.FC = () => {
 
           {/* Botones */}
           <div className="flex items-center justify-end space-x-4">
+            <button
+              type="button"
+              onClick={testConnection}
+              className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm"
+            >
+              Test API
+            </button>
             <button
               type="button"
               onClick={() => window.history.back()}
