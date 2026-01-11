@@ -79,13 +79,20 @@ export async function subirImagenANocoDB(
     const blob = new Blob([uint8Array], { type: 'image/jpeg' });
     formData.append('file', blob, fileName);
 
+    // Upload con timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos timeout para upload
+
     const response = await fetch(`${NOCODB_BASE_URL}/api/v1/db/storage/upload`, {
       method: 'POST',
       headers: {
         'xc-token': NOCODB_API_TOKEN || '',
       },
       body: formData,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -121,6 +128,16 @@ export async function subirImagenANocoDB(
     };
   } catch (error) {
     console.error('Error al subir imagen a NocoDB:', error);
+    
+    // Manejar diferentes tipos de errores
+    if (error.name === 'AbortError') {
+      throw new Error('Timeout: La subida de imagen tardó demasiado tiempo. Intente con una imagen más pequeña.');
+    }
+    
+    if (error.message.includes('fetch')) {
+      throw new Error('Error de conexión al subir imagen. Verifique su conexión a internet.');
+    }
+    
     throw error; // Re-lanzar el error original para mejor debugging
   }
 }

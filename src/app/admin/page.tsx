@@ -178,15 +178,38 @@ const AdminPage: React.FC = () => {
         formData.append('imagen360', formulario.imagen360);
       }
 
-      // Enviar a API
-      const response = await fetch('/api/ubicaciones/agregar', {
-        method: 'POST',
-        body: formData,
-      });
+      // Enviar a API con timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos timeout
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error al guardar ubicación');
+      try {
+        const response = await fetch('/api/ubicaciones/agregar', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          let errorMessage = 'Error al guardar ubicación';
+          try {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } catch (e) {
+            errorMessage = `Error HTTP ${response.status}: ${response.statusText}`;
+          }
+          throw new Error(errorMessage);
+        }
+
+        const result = await response.json();
+        console.log('Ubicación guardada exitosamente:', result);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('La operación tardó demasiado tiempo. Verifique su conexión e intente de nuevo.');
+        }
+        throw fetchError;
       }
 
       setMensaje({ tipo: 'success', texto: '¡Ubicación agregada exitosamente!' });

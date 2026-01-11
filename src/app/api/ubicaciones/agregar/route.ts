@@ -127,11 +127,15 @@ export async function POST(request: NextRequest) {
       notas,
     });
 
+    console.log('Iniciando guardado en NocoDB...');
     const exito = await agregarUbicacion(ubicacionObj);
+    console.log('Resultado del guardado:', exito);
 
     if (exito) {
+      console.log('Ubicación guardada exitosamente');
       return NextResponse.json({ mensaje: 'Ubicación agregada exitosamente' });
     } else {
+      console.error('Error: No se pudo guardar en NocoDB');
       return NextResponse.json(
         { error: 'Error al guardar en NocoDB' },
         { status: 500 }
