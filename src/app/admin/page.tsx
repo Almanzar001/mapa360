@@ -158,13 +158,24 @@ const AdminPage: React.FC = () => {
         throw new Error('Formato de ubicación inválido. Use el formato: latitud,longitud (ej: 18.626,-68.707)');
       }
 
-      // Log de tamaños para debugging
-      console.log('Enviando ubicación:', formulario.nombre);
-      formulario.imagenesConvencionales.forEach((img, i) => {
-        console.log(`Imagen ${i + 1}: ${(img.size / 1024 / 1024).toFixed(2)}MB`);
-      });
+      // Validar tamaños realistas
+      const maxSizeConvencional = 10 * 1024 * 1024; // 10MB
+      const maxSize360 = 15 * 1024 * 1024; // 15MB
+      
+      for (let i = 0; i < formulario.imagenesConvencionales.length; i++) {
+        const size = formulario.imagenesConvencionales[i].size;
+        console.log(`Imagen ${i + 1}: ${(size / 1024 / 1024).toFixed(2)}MB`);
+        if (size > maxSizeConvencional) {
+          throw new Error(`Imagen ${i + 1} es muy grande (${(size / 1024 / 1024).toFixed(1)}MB). Máximo 10MB para imágenes convencionales.`);
+        }
+      }
+
       if (formulario.imagen360) {
-        console.log(`Imagen 360°: ${(formulario.imagen360.size / 1024 / 1024).toFixed(2)}MB`);
+        const size = formulario.imagen360.size;
+        console.log(`Imagen 360°: ${(size / 1024 / 1024).toFixed(2)}MB`);
+        if (size > maxSize360) {
+          throw new Error(`Imagen 360° es muy grande (${(size / 1024 / 1024).toFixed(1)}MB). Máximo 15MB para imágenes 360°.`);
+        }
       }
 
       // Crear FormData
@@ -198,8 +209,20 @@ const AdminPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error al guardar ubicación');
+        let errorMessage = 'Error al guardar ubicación';
+        
+        if (response.status === 502) {
+          errorMessage = 'El servidor no pudo procesar las imágenes. Intenta con archivos más pequeños o reduce la calidad.';
+        } else {
+          try {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } catch (e) {
+            errorMessage = `Error ${response.status}: ${response.statusText}`;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
