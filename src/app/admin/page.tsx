@@ -158,9 +158,9 @@ const AdminPage: React.FC = () => {
         throw new Error('Formato de ubicación inválido. Use el formato: latitud,longitud (ej: 18.626,-68.707)');
       }
 
-      // Validar tamaños realistas
+      // Validar tamaños realistas (360° se optimizará automáticamente)
       const maxSizeConvencional = 10 * 1024 * 1024; // 10MB
-      const maxSize360 = 15 * 1024 * 1024; // 15MB
+      const maxSize360 = 50 * 1024 * 1024; // 50MB (se optimizará al subir)
       
       for (let i = 0; i < formulario.imagenesConvencionales.length; i++) {
         const size = formulario.imagenesConvencionales[i].size;
@@ -174,7 +174,11 @@ const AdminPage: React.FC = () => {
         const size = formulario.imagen360.size;
         console.log(`Imagen 360°: ${(size / 1024 / 1024).toFixed(2)}MB`);
         if (size > maxSize360) {
-          throw new Error(`Imagen 360° es muy grande (${(size / 1024 / 1024).toFixed(1)}MB). Máximo 15MB para imágenes 360°.`);
+          throw new Error(`Imagen 360° es muy grande (${(size / 1024 / 1024).toFixed(1)}MB). Máximo 50MB - se optimizará automáticamente.`);
+        }
+        
+        if (size > 20 * 1024 * 1024) {
+          console.warn('⚠️ Imagen 360° grande detectada - se optimizará durante el procesamiento');
         }
       }
 
@@ -199,34 +203,51 @@ const AdminPage: React.FC = () => {
         formData.append('imagen360', formulario.imagen360);
       }
 
-      // Enviar a API (simplificado)
-      console.log('Enviando FormData al servidor...');
+      // Enviar a API con timeout apropiado para imágenes grandes
+      const hasLargeImages = formulario.imagen360 && formulario.imagen360.size > 10 * 1024 * 1024;
+      const timeoutMs = hasLargeImages ? 180000 : 60000; // 3 minutos para imágenes grandes
+      
+      console.log(`Enviando al servidor... ${hasLargeImages ? '(procesando imagen 360° grande)' : ''}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      const response = await fetch('/api/ubicaciones/agregar', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Error al guardar ubicación';
+      try {
+        const response = await fetch('/api/ubicaciones/agregar', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+          signal: controller.signal,
+        });
         
-        if (response.status === 502) {
-          errorMessage = 'El servidor no pudo procesar las imágenes. Intenta con archivos más pequeños o reduce la calidad.';
-        } else {
-          try {
-            const error = await response.json();
-            errorMessage = error.error || errorMessage;
-          } catch (e) {
-            errorMessage = `Error ${response.status}: ${response.statusText}`;
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          let errorMessage = 'Error al guardar ubicación';
+          
+          if (response.status === 502) {
+            errorMessage = 'El servidor no pudo procesar las imágenes. La imagen 360° se está optimizando, esto puede tardar unos minutos.';
+          } else {
+            try {
+              const error = await response.json();
+              errorMessage = error.error || errorMessage;
+            } catch (e) {
+              errorMessage = `Error ${response.status}: ${response.statusText}`;
+            }
           }
+          
+          throw new Error(errorMessage);
         }
-        
-        throw new Error(errorMessage);
-      }
 
-      const result = await response.json();
-      console.log('Ubicación guardada exitosamente:', result);
+        const result = await response.json();
+        console.log('Ubicación guardada exitosamente:', result);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('El procesamiento de la imagen 360° está tardando mucho. Intenta con una imagen más pequeña o espera unos minutos.');
+        }
+        throw fetchError;
+      }
 
       setMensaje({ tipo: 'success', texto: '¡Ubicación agregada exitosamente!' });
       
