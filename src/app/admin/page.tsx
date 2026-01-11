@@ -47,7 +47,9 @@ const AdminPage: React.FC = () => {
         canvas.height = targetHeight;
         
         // Dibujar imagen redimensionada
-        ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        }
         
         // Convertir a blob con compresión
         canvas.toBlob((blob) => {
@@ -96,9 +98,11 @@ const AdminPage: React.FC = () => {
         canvas.height = targetHeight;
         
         // Dibujar imagen redimensionada con mejor calidad
-        ctx?.imageSmoothingEnabled = true;
-        ctx?.imageSmoothingQuality = 'high';
-        ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        }
         
         // Convertir a blob con buena compresión
         canvas.toBlob((blob) => {
