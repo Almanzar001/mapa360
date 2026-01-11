@@ -1,5 +1,6 @@
 import { Ubicacion, Categoria } from '@/types';
 import { crearUbicacion, coordenadasToString, extraerLatitud, extraerLongitud } from './ubicacion-utils';
+import { createProxyImageUrl } from './image-proxy';
 
 const NOCODB_BASE_URL = process.env.NOCODB_BASE_URL;
 const NOCODB_API_TOKEN = process.env.NOCODB_API_TOKEN;
@@ -28,14 +29,34 @@ export async function obtenerUbicaciones(): Promise<Ubicacion[]> {
       // Parsear URLs de imágenes - NocoDB devuelve arrays directamente
       let urlImagenes: string[] = [];
       if (row.URL_Imagenes) {
+        console.log('Raw URL_Imagenes data:', row.URL_Imagenes);
         if (Array.isArray(row.URL_Imagenes)) {
-          // Ya es un array de objetos attachment de NocoDB
-          urlImagenes = row.URL_Imagenes.map((img: any) => img.signedUrl || img.url);
+          // Ya es un array de objetos attachment de NocoDB - priorizar signedUrl
+          urlImagenes = row.URL_Imagenes.map((img: any) => {
+            let url = img.signedUrl || img.url || img.path;
+            console.log('Raw image URL:', url);
+            
+            // Asegurar que sea una URL completa
+            if (url && !url.startsWith('http')) {
+              url = `${process.env.NOCODB_BASE_URL}${url}`;
+            }
+            
+            // Aplicar proxy en producción
+            const finalUrl = createProxyImageUrl(url);
+            console.log('Final image URL:', finalUrl);
+            return finalUrl;
+          }).filter(Boolean);
         } else if (typeof row.URL_Imagenes === 'string') {
           try {
             const imagenesJson = JSON.parse(row.URL_Imagenes);
             urlImagenes = Array.isArray(imagenesJson) 
-              ? imagenesJson.map((img: any) => img.url || img) 
+              ? imagenesJson.map((img: any) => {
+                  let url = img.url || img.path || img;
+                  if (url && !url.startsWith('http')) {
+                    url = `${process.env.NOCODB_BASE_URL}${url}`;
+                  }
+                  return createProxyImageUrl(url);
+                }).filter(Boolean)
               : [];
           } catch {
             urlImagenes = row.URL_Imagenes.split(',').map((url: string) => url.trim()).filter(Boolean);
@@ -46,15 +67,34 @@ export async function obtenerUbicaciones(): Promise<Ubicacion[]> {
       // Parsear URL de foto 360
       let urlFoto360 = '';
       if (row.URL_Foto_360) {
+        console.log('Raw URL_Foto_360 data:', row.URL_Foto_360);
         if (Array.isArray(row.URL_Foto_360) && row.URL_Foto_360.length > 0) {
           // Ya es un array de objetos attachment de NocoDB - priorizar signedUrl para acceso público
-          urlFoto360 = row.URL_Foto_360[0].signedUrl || row.URL_Foto_360[0].url;
+          let url = row.URL_Foto_360[0].signedUrl || row.URL_Foto_360[0].url || row.URL_Foto_360[0].path;
+          console.log('Raw 360 URL:', url);
+          // Asegurar que sea una URL completa
+          if (url && !url.startsWith('http')) {
+            url = `${process.env.NOCODB_BASE_URL}${url}`;
+          }
+          // Aplicar proxy en producción
+          urlFoto360 = createProxyImageUrl(url);
+          console.log('Final 360 URL:', urlFoto360);
         } else if (typeof row.URL_Foto_360 === 'string') {
           try {
             const foto360Json = JSON.parse(row.URL_Foto_360);
-            urlFoto360 = Array.isArray(foto360Json) && foto360Json.length > 0 
-              ? foto360Json[0].url || foto360Json[0] 
-              : foto360Json.url || foto360Json;
+            if (Array.isArray(foto360Json) && foto360Json.length > 0) {
+              let url = foto360Json[0].url || foto360Json[0].path || foto360Json[0];
+              if (url && !url.startsWith('http')) {
+                url = `${process.env.NOCODB_BASE_URL}${url}`;
+              }
+              urlFoto360 = createProxyImageUrl(url);
+            } else {
+              let url = foto360Json.url || foto360Json.path || foto360Json;
+              if (url && !url.startsWith('http')) {
+                url = `${process.env.NOCODB_BASE_URL}${url}`;
+              }
+              urlFoto360 = createProxyImageUrl(url);
+            }
           } catch {
             urlFoto360 = row.URL_Foto_360;
           }
