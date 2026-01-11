@@ -186,6 +186,7 @@ const AdminPage: React.FC = () => {
         const response = await fetch('/api/ubicaciones/agregar', {
           method: 'POST',
           body: formData,
+          credentials: 'include',
           signal: controller.signal,
         });
 
