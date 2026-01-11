@@ -194,3 +194,34 @@ export async function actualizarUbicacion(id: string, ubicacion: Partial<Ubicaci
     return false;
   }
 }
+
+export async function eliminarUbicacion(id: string): Promise<boolean> {
+  try {
+    console.log('Eliminando ubicación con ID:', id);
+    
+    const url = `${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records`;
+    console.log('URL de eliminación:', url);
+    
+    // NocoDB requiere DELETE con array de IDs para bulk delete
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers,
+      body: JSON.stringify([{ Id: parseInt(id) }]), // Enviar como array con ID como entero
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('NocoDB - Error response:', response.status, errorText);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log('NocoDB - Eliminación exitosa:', result);
+    
+    // Verificar que se eliminó correctamente
+    return true;
+  } catch (error) {
+    console.error('Error al eliminar ubicación:', error);
+    return false;
+  }
+}

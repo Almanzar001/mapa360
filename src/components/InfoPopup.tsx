@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Calendar, MapPin, Image, Camera, Tag, Clock, Edit } from 'lucide-react';
+import { X, Calendar, MapPin, Image, Camera, Tag, Clock, Edit, Trash2 } from 'lucide-react';
 import { Ubicacion } from '@/types';
 import GaleriaImagenes from './GaleriaImagenes';
 import { obtenerNombreCategoria, obtenerColorCategoria } from '@/lib/iconos-categoria';
@@ -13,6 +13,8 @@ interface InfoPopupProps {
   onClose: () => void;
   onView360: (url: string) => void;
   onEdit?: (ubicacion: Ubicacion) => void;
+  onDelete?: (ubicacion: Ubicacion) => void;
+  userRole?: string;
 }
 
 const InfoPopup: React.FC<InfoPopupProps> = ({
@@ -21,6 +23,8 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
   onClose,
   onView360,
   onEdit,
+  onDelete,
+  userRole,
 }) => {
   const [galeriaAbierta, setGaleriaAbierta] = useState(false);
   const [imagenInicialGaleria, setImagenInicialGaleria] = useState(0);
@@ -81,6 +85,15 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
                   title="Editar ubicación"
                 >
                   <Edit className="w-5 h-5 text-blue-600 group-hover:text-blue-700" />
+                </button>
+              )}
+              {onDelete && userRole && ['Admin', 'SuperAdmin'].includes(userRole) && (
+                <button
+                  onClick={() => onDelete(ubicacion)}
+                  className="p-2 hover:bg-red-100 rounded-full transition-colors group"
+                  title="Eliminar ubicación"
+                >
+                  <Trash2 className="w-5 h-5 text-red-600 group-hover:text-red-700" />
                 </button>
               )}
               <button

@@ -101,6 +101,39 @@ export default function DashboardPage() {
     }, 1000);
   };
 
+  const handleEliminarUbicacion = async (ubicacion: Ubicacion) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar "${ubicacion.nombre}"?\n\nEsta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/ubicaciones/${ubicacion.id}/eliminar`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        // Eliminar de la lista local
+        setUbicaciones(prev => prev.filter(u => u.id !== ubicacion.id));
+        // Cerrar el popup si está abierto
+        if (showPopup && ubicacionSeleccionada?.id === ubicacion.id) {
+          setShowPopup(false);
+          setUbicacionSeleccionada(null);
+        }
+        // Recargar ubicaciones para confirmar
+        setTimeout(() => {
+          cargarUbicaciones();
+        }, 500);
+      } else {
+        const error = await response.json();
+        alert(`Error al eliminar ubicación: ${error.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('Error al eliminar ubicación:', error);
+      alert('Error de conexión al eliminar la ubicación');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -300,6 +333,8 @@ export default function DashboardPage() {
             onClose={handleClosePopup}
             onView360={handleView360}
             onEdit={usuario.rol !== 'Viewer' ? handleEditarUbicacion : undefined}
+            onDelete={['Admin', 'SuperAdmin'].includes(usuario.rol) ? handleEliminarUbicacion : undefined}
+            userRole={usuario.rol}
           />
         )}
 
