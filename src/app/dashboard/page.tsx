@@ -152,7 +152,7 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="h-screen flex flex-col">
-        {/* Controls - Positioned over map */}
+        {/* Map Controls */}
         <div className="absolute top-4 right-4 z-10 flex items-center space-x-2">
           <select
             value={filtroCategoria}
