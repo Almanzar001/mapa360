@@ -25,62 +25,6 @@ const AdminPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
   
-  const testConnection = async () => {
-    try {
-      const response = await fetch('/api/test', {
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      console.log('Test result:', result);
-      
-      setMensaje({
-        tipo: response.ok ? 'success' : 'error',
-        texto: response.ok ? `Conexión OK: ${result.user?.email}` : `Error: ${result.error}`
-      });
-    } catch (error) {
-      console.error('Test failed:', error);
-      setMensaje({
-        tipo: 'error',
-        texto: `Test failed: ${error.message}`
-      });
-    }
-  };
-
-  const testSaveEndpoint = async () => {
-    try {
-      // Test básico del endpoint de guardar sin imágenes
-      const testFormData = new FormData();
-      testFormData.append('nombre', 'Test Location');
-      testFormData.append('ubicacion', '18.5,-69.0');
-      testFormData.append('fechaEmision', '2024-01-01');
-      testFormData.append('fechaFinalizacion', '2025-01-01'); 
-      testFormData.append('estado', 'Activo');
-      testFormData.append('categoria', 'Permiso');
-      testFormData.append('vigencia', '365');
-      testFormData.append('notas', 'Test sin imágenes');
-
-      const response = await fetch('/api/ubicaciones/agregar', {
-        method: 'POST',
-        body: testFormData,
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      console.log('Save test result:', result);
-      
-      setMensaje({
-        tipo: response.ok ? 'success' : 'error',
-        texto: response.ok ? `Save OK: ${result.mensaje}` : `Save Error: ${result.error}`
-      });
-    } catch (error) {
-      console.error('Save test failed:', error);
-      setMensaje({
-        tipo: 'error',
-        texto: `Save test failed: ${error.message}`
-      });
-    }
-  };
   const [previewImagenes, setPreviewImagenes] = useState<string[]>([]);
   const [preview360, setPreview360] = useState<string>('');
 
@@ -214,16 +158,13 @@ const AdminPage: React.FC = () => {
         throw new Error('Formato de ubicación inválido. Use el formato: latitud,longitud (ej: 18.626,-68.707)');
       }
 
-      // Validar tamaño de imágenes (máximo 5MB cada una)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      for (let i = 0; i < formulario.imagenesConvencionales.length; i++) {
-        if (formulario.imagenesConvencionales[i].size > maxSize) {
-          throw new Error(`Imagen ${i + 1} es muy grande. Máximo 5MB por imagen.`);
-        }
-      }
-
-      if (formulario.imagen360 && formulario.imagen360.size > maxSize) {
-        throw new Error('Imagen 360° es muy grande. Máximo 5MB.');
+      // Log de tamaños para debugging
+      console.log('Enviando ubicación:', formulario.nombre);
+      formulario.imagenesConvencionales.forEach((img, i) => {
+        console.log(`Imagen ${i + 1}: ${(img.size / 1024 / 1024).toFixed(2)}MB`);
+      });
+      if (formulario.imagen360) {
+        console.log(`Imagen 360°: ${(formulario.imagen360.size / 1024 / 1024).toFixed(2)}MB`);
       }
 
       // Crear FormData
@@ -247,45 +188,22 @@ const AdminPage: React.FC = () => {
         formData.append('imagen360', formulario.imagen360);
       }
 
-      // Enviar a API con timeout (más tiempo si hay imágenes)
-      const hasImages = formulario.imagenesConvencionales.length > 0 || formulario.imagen360;
-      const timeoutMs = hasImages ? 120000 : 60000; // 2 minutos con imágenes, 1 minuto sin imágenes
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      // Enviar a API (simplificado)
+      console.log('Enviando FormData al servidor...');
 
-      console.log(`Enviando ubicación con ${formulario.imagenesConvencionales.length} imágenes convencionales y ${formulario.imagen360 ? '1' : '0'} imagen 360°`);
+      const response = await fetch('/api/ubicaciones/agregar', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
 
-      try {
-        const response = await fetch('/api/ubicaciones/agregar', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          let errorMessage = 'Error al guardar ubicación';
-          try {
-            const error = await response.json();
-            errorMessage = error.error || errorMessage;
-          } catch (e) {
-            errorMessage = `Error HTTP ${response.status}: ${response.statusText}`;
-          }
-          throw new Error(errorMessage);
-        }
-
-        const result = await response.json();
-        console.log('Ubicación guardada exitosamente:', result);
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        if (fetchError.name === 'AbortError') {
-          throw new Error('La operación tardó demasiado tiempo. Verifique su conexión e intente de nuevo.');
-        }
-        throw fetchError;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al guardar ubicación');
       }
+
+      const result = await response.json();
+      console.log('Ubicación guardada exitosamente:', result);
 
       setMensaje({ tipo: 'success', texto: '¡Ubicación agregada exitosamente!' });
       
@@ -610,20 +528,6 @@ const AdminPage: React.FC = () => {
 
           {/* Botones */}
           <div className="flex items-center justify-end space-x-4">
-            <button
-              type="button"
-              onClick={testConnection}
-              className="px-3 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm"
-            >
-              Test API
-            </button>
-            <button
-              type="button"
-              onClick={testSaveEndpoint}
-              className="px-3 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm"
-            >
-              Test Save
-            </button>
             <button
               type="button"
               onClick={() => window.history.back()}
