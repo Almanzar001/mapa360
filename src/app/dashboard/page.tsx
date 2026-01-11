@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtroCategoria, setFiltroCategoria] = useState<Categoria | 'Todas'>('Todas');
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [showFormularioEdicion, setShowFormularioEdicion] = useState(false);
   const [ubicacionAEditar, setUbicacionAEditar] = useState<Ubicacion | null>(null);
 
@@ -38,6 +39,15 @@ export default function DashboardPage() {
       cargarUbicaciones();
     }
   }, [usuario]);
+
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = () => setMostrarFiltros(false);
+    if (mostrarFiltros) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [mostrarFiltros]);
 
   const cargarUbicaciones = async () => {
     try {
@@ -152,23 +162,60 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="h-screen flex flex-col">
-        {/* Map Controls - Responsive */}
-        <div className="absolute top-16 md:top-4 left-4 right-4 z-10 flex flex-col sm:flex-row sm:justify-end items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-          <select
-            value={filtroCategoria}
-            onChange={(e) => setFiltroCategoria(e.target.value as Categoria | 'Todas')}
-            className="w-full sm:w-auto px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            <option value="Todas">Todas</option>
-            <option value="Mina">Minas ({ubicaciones.filter(u => u.categoria === 'Mina').length})</option>
-            <option value="Hormigonera">Hormigoneras ({ubicaciones.filter(u => u.categoria === 'Hormigonera').length})</option>
-            <option value="Permiso">Permisos ({ubicaciones.filter(u => u.categoria === 'Permiso').length})</option>
-          </select>
+        {/* Map Controls - Floating Circular */}
+        <div className="absolute top-16 md:top-4 right-4 z-10 flex flex-col space-y-3">
+          {/* Category Filter Button */}
+          <div className="relative">
+            <button
+              onClick={() => setMostrarFiltros(!mostrarFiltros)}
+              className="w-12 h-12 bg-white rounded-full shadow-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              title="Filtrar categorías"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 2v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+              </svg>
+            </button>
+            
+            {/* Filter Dropdown */}
+            {mostrarFiltros && (
+              <div className="absolute top-14 right-0 bg-white rounded-lg shadow-lg border border-gray-300 py-1 min-w-[180px] z-20">
+                <button
+                  onClick={() => { setFiltroCategoria('Todas'); setMostrarFiltros(false); }}
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${filtroCategoria === 'Todas' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}
+                >
+                  Todas ({ubicaciones.length})
+                </button>
+                <button
+                  onClick={() => { setFiltroCategoria('Mina'); setMostrarFiltros(false); }}
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${filtroCategoria === 'Mina' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}
+                >
+                  Minas ({ubicaciones.filter(u => u.categoria === 'Mina').length})
+                </button>
+                <button
+                  onClick={() => { setFiltroCategoria('Hormigonera'); setMostrarFiltros(false); }}
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${filtroCategoria === 'Hormigonera' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}
+                >
+                  Hormigoneras ({ubicaciones.filter(u => u.categoria === 'Hormigonera').length})
+                </button>
+                <button
+                  onClick={() => { setFiltroCategoria('Permiso'); setMostrarFiltros(false); }}
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${filtroCategoria === 'Permiso' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}
+                >
+                  Permisos ({ubicaciones.filter(u => u.categoria === 'Permiso').length})
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Refresh Button */}
           <button
             onClick={cargarUbicaciones}
-            className="w-full sm:w-auto px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            className="w-12 h-12 bg-white rounded-full shadow-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+            title="Actualizar ubicaciones"
           >
-            🔄 Actualizar
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
           </button>
         </div>
 
