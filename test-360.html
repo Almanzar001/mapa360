@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Visor 360</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <style>
+        #panorama {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Prueba del Visor 360°</h1>
+    <div id="panorama"></div>
+    
+    <div style="margin-top: 20px;">
+        <button onclick="testImage()">Cargar Imagen 360°</button>
+        <p id="status">Haz clic en el botón para cargar la imagen</p>
+    </div>
+    
+    <script>
+        function testImage() {
+            const imageUrl = "http://basededatosmapa360-nocodb-073f1b-157-173-127-78.traefik.me/download/2026/01/10/4d6193300a868468127e3efd24ad15acded24b1c/imagen_360_1768004636925_d2G9h.jpg";
+            
+            document.getElementById('status').textContent = 'Cargando imagen 360°...';
+            
+            try {
+                pannellum.viewer('panorama', {
+                    "type": "equirectangular",
+                    "panorama": imageUrl,
+                    "autoLoad": true,
+                    "autoRotate": -2,
+                    "compass": true,
+                    "onload": function() {
+                        document.getElementById('status').textContent = '¡Imagen cargada exitosamente!';
+                        console.log('Pannellum loaded successfully');
+                    },
+                    "onerror": function(error) {
+                        document.getElementById('status').textContent = 'Error: ' + error;
+                        console.error('Pannellum error:', error);
+                    }
+                });
+            } catch (error) {
+                document.getElementById('status').textContent = 'Error al inicializar: ' + error.message;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

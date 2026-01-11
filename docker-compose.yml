@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  mapa360:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+      - NOCODB_BASE_URL=${NOCODB_BASE_URL}
+      - NOCODB_API_TOKEN=${NOCODB_API_TOKEN}
+      - NOCODB_TABLE_ID=${NOCODB_TABLE_ID}
+      - NOCODB_USUARIOS_TABLE_ID=${NOCODB_USUARIOS_TABLE_ID}
+      - JWT_SECRET=${JWT_SECRET}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+    restart: unless-stopped

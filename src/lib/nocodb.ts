@@ -1,0 +1,196 @@
+import { Ubicacion, Categoria } from '@/types';
+import { crearUbicacion, coordenadasToString, extraerLatitud, extraerLongitud } from './ubicacion-utils';
+
+const NOCODB_BASE_URL = process.env.NOCODB_BASE_URL;
+const NOCODB_API_TOKEN = process.env.NOCODB_API_TOKEN;
+const NOCODB_TABLE_ID = process.env.NOCODB_TABLE_ID;
+
+const headers = {
+  'Content-Type': 'application/json',
+  'xc-token': NOCODB_API_TOKEN || '',
+};
+
+export async function obtenerUbicaciones(): Promise<Ubicacion[]> {
+  try {
+    const response = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records`, {
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // console.log('NocoDB GET response:', data.list?.length || 0, 'registros');
+    
+    return data.list.map((row: any): Ubicacion => {
+      // Parsear URLs de imágenes - NocoDB devuelve arrays directamente
+      let urlImagenes: string[] = [];
+      if (row.URL_Imagenes) {
+        if (Array.isArray(row.URL_Imagenes)) {
+          // Ya es un array de objetos attachment de NocoDB
+          urlImagenes = row.URL_Imagenes.map((img: any) => img.signedUrl || img.url);
+        } else if (typeof row.URL_Imagenes === 'string') {
+          try {
+            const imagenesJson = JSON.parse(row.URL_Imagenes);
+            urlImagenes = Array.isArray(imagenesJson) 
+              ? imagenesJson.map((img: any) => img.url || img) 
+              : [];
+          } catch {
+            urlImagenes = row.URL_Imagenes.split(',').map((url: string) => url.trim()).filter(Boolean);
+          }
+        }
+      }
+
+      // Parsear URL de foto 360
+      let urlFoto360 = '';
+      if (row.URL_Foto_360) {
+        if (Array.isArray(row.URL_Foto_360) && row.URL_Foto_360.length > 0) {
+          // Ya es un array de objetos attachment de NocoDB - priorizar signedUrl para acceso público
+          urlFoto360 = row.URL_Foto_360[0].signedUrl || row.URL_Foto_360[0].url;
+        } else if (typeof row.URL_Foto_360 === 'string') {
+          try {
+            const foto360Json = JSON.parse(row.URL_Foto_360);
+            urlFoto360 = Array.isArray(foto360Json) && foto360Json.length > 0 
+              ? foto360Json[0].url || foto360Json[0] 
+              : foto360Json.url || foto360Json;
+          } catch {
+            urlFoto360 = row.URL_Foto_360;
+          }
+        }
+      }
+
+      // Manejar tanto el formato nuevo (Ubicacion) como el legacy (Latitud/Longitud)
+      let ubicacion = '';
+      if (row.Ubicacion) {
+        // Formato nuevo
+        ubicacion = row.Ubicacion;
+      } else if (row.Latitud && row.Longitud) {
+        // Formato legacy - convertir a nuevo formato
+        ubicacion = coordenadasToString(parseFloat(row.Latitud), parseFloat(row.Longitud));
+      }
+
+      return crearUbicacion({
+        id: row.Id?.toString() || '',
+        nombre: row.Nombre || '',
+        ubicacion,
+        fechaEmision: row.Fecha_Emision || '',
+        fechaFinalizacion: row.Fecha_Finalizacion || '',
+        estado: (row.Estado as 'Activo' | 'Inactivo') || 'Inactivo',
+        categoria: (row.Categoria as Categoria) || 'Permiso',
+        vigencia: parseInt(row.Vigencia) || 365, // Default 1 año si no se especifica
+        urlImagenes,
+        urlFoto360,
+        notas: row.Notas || '',
+      });
+    });
+  } catch (error) {
+    console.error('Error al obtener ubicaciones:', error);
+    return [];
+  }
+}
+
+export async function agregarUbicacion(ubicacion: Omit<Ubicacion, 'id'>): Promise<boolean> {
+  try {
+    // Formatear attachments según el formato esperado por NocoDB
+    let urlImagenesJson = null;
+    if (ubicacion.urlImagenes.length > 0) {
+      urlImagenesJson = JSON.stringify(ubicacion.urlImagenes.map(url => ({
+        url: url,
+        title: url.split('/').pop() || url,
+        mimetype: 'image/jpeg',
+        size: 0
+      })));
+    }
+
+    let urlFoto360Json = null;
+    if (ubicacion.urlFoto360) {
+      urlFoto360Json = JSON.stringify([{
+        url: ubicacion.urlFoto360,
+        title: ubicacion.urlFoto360.split('/').pop() || ubicacion.urlFoto360,
+        mimetype: 'image/jpeg',
+        size: 0
+      }]);
+    }
+
+    const data = {
+      Nombre: ubicacion.nombre,
+      Ubicacion: ubicacion.ubicacion, // Nuevo campo unificado
+      Fecha_Emision: ubicacion.fechaEmision,
+      Fecha_Finalizacion: ubicacion.fechaFinalizacion,
+      Estado: ubicacion.estado,
+      Categoria: ubicacion.categoria,
+      Vigencia: ubicacion.vigencia,
+      URL_Imagenes: urlImagenesJson,
+      URL_Foto_360: urlFoto360Json,
+      Notas: ubicacion.notas || '',
+    };
+
+    // console.log('NocoDB - Datos a enviar:', data);
+
+    const response = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('NocoDB - Error response:', errorText);
+    }
+
+    return response.ok;
+  } catch (error) {
+    console.error('Error al agregar ubicación:', error);
+    return false;
+  }
+}
+
+export async function actualizarUbicacion(id: string, ubicacion: Partial<Ubicacion>): Promise<boolean> {
+  try {
+    console.log('Actualizando ubicación con ID:', id, 'Datos:', ubicacion);
+    
+    // NocoDB requiere el ID como entero en el objeto de actualización
+    const updateData = {
+      Id: parseInt(id), // ID debe ser entero
+      ...(ubicacion.nombre && { Nombre: ubicacion.nombre }),
+      ...(ubicacion.ubicacion && { Ubicacion: ubicacion.ubicacion }),
+      ...(ubicacion.fechaEmision && { Fecha_Emision: ubicacion.fechaEmision }),
+      ...(ubicacion.fechaFinalizacion && { Fecha_Finalizacion: ubicacion.fechaFinalizacion }),
+      ...(ubicacion.estado && { Estado: ubicacion.estado }),
+      ...(ubicacion.categoria && { Categoria: ubicacion.categoria }),
+      ...(ubicacion.vigencia !== undefined && { Vigencia: ubicacion.vigencia }),
+      ...(ubicacion.urlImagenes && { URL_Imagenes: JSON.stringify(ubicacion.urlImagenes.map(url => ({ url, title: url.split('/').pop(), mimetype: 'image/jpeg', size: 0 }))) }),
+      ...(ubicacion.urlFoto360 && { URL_Foto_360: JSON.stringify([{ url: ubicacion.urlFoto360, title: ubicacion.urlFoto360.split('/').pop(), mimetype: 'image/jpeg', size: 0 }]) }),
+      ...(ubicacion.notas !== undefined && { Notas: ubicacion.notas }),
+    };
+
+    console.log('Datos a enviar a NocoDB (bulk format):', updateData);
+
+    // NocoDB requiere formato de array para bulk update
+    const url = `${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records`;
+    console.log('URL de actualización (bulk):', url);
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify([updateData]), // Enviar como array
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('NocoDB - Error response:', response.status, errorText);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log('NocoDB - Actualización exitosa:', result);
+    
+    // Verificar que se actualizó correctamente
+    return Array.isArray(result) && result.length > 0 && result[0].Id == id;
+  } catch (error) {
+    console.error('Error al actualizar ubicación:', error);
+    return false;
+  }
+}
