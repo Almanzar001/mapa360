@@ -23,6 +23,7 @@ const AdminPage: React.FC = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
   
   // Función para comprimir imagen 360° en el frontend
@@ -60,6 +61,57 @@ const AdminPage: React.FC = () => {
             reject(new Error('Error al comprimir imagen'));
           }
         }, 'image/jpeg', 0.8); // 80% calidad
+      };
+      
+      img.onerror = () => reject(new Error('Error al cargar imagen para compresión'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+  
+  // Función para comprimir imágenes convencionales
+  const compressConventionalImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Redimensionar manteniendo proporción pero limitando tamaño máximo
+        let targetWidth = img.width;
+        let targetHeight = img.height;
+        
+        const maxDimension = 2048; // Tamaño máximo para imágenes convencionales
+        
+        if (img.width > maxDimension || img.height > maxDimension) {
+          if (img.width > img.height) {
+            targetWidth = maxDimension;
+            targetHeight = (img.height / img.width) * maxDimension;
+          } else {
+            targetHeight = maxDimension;
+            targetWidth = (img.width / img.height) * maxDimension;
+          }
+        }
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        // Dibujar imagen redimensionada con mejor calidad
+        ctx?.imageSmoothingEnabled = true;
+        ctx?.imageSmoothingQuality = 'high';
+        ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
+        
+        // Convertir a blob con buena compresión
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            reject(new Error('Error al comprimir imagen'));
+          }
+        }, 'image/jpeg', 0.85); // 85% calidad para buena visualización
       };
       
       img.onerror = () => reject(new Error('Error al cargar imagen para compresión'));
@@ -200,15 +252,29 @@ const AdminPage: React.FC = () => {
         throw new Error('Formato de ubicación inválido. Use el formato: latitud,longitud (ej: 18.626,-68.707)');
       }
 
-      // Validar tamaños realistas (360° se optimizará automáticamente)
-      const maxSizeConvencional = 10 * 1024 * 1024; // 10MB
+      // Procesar y comprimir imágenes convencionales si son grandes
+      setLoadingMessage('Validando y optimizando imágenes...');
+      
+      const maxSizeConvencional = 5 * 1024 * 1024; // 5MB límite antes de comprimir
       const maxSize360 = 50 * 1024 * 1024; // 50MB (se optimizará al subir)
       
       for (let i = 0; i < formulario.imagenesConvencionales.length; i++) {
-        const size = formulario.imagenesConvencionales[i].size;
+        const originalFile = formulario.imagenesConvencionales[i];
+        const size = originalFile.size;
         console.log(`Imagen ${i + 1}: ${(size / 1024 / 1024).toFixed(2)}MB`);
+        
         if (size > maxSizeConvencional) {
-          throw new Error(`Imagen ${i + 1} es muy grande (${(size / 1024 / 1024).toFixed(1)}MB). Máximo 10MB para imágenes convencionales.`);
+          setLoadingMessage(`Comprimiendo imagen ${i + 1} para mejor rendimiento...`);
+          
+          try {
+            const compressedFile = await compressConventionalImage(originalFile);
+            formulario.imagenesConvencionales[i] = compressedFile;
+            console.log(`Imagen ${i + 1} comprimida: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+          } catch (error) {
+            console.error('Error al comprimir imagen:', error);
+            setLoadingMessage('');
+            throw new Error(`Error al comprimir imagen ${i + 1}. Intenta con una imagen más pequeña.`);
+          }
         }
       }
 
@@ -221,9 +287,7 @@ const AdminPage: React.FC = () => {
         
         if (size > 15 * 1024 * 1024) {
           console.warn('⚠️ Imagen 360° grande detectada - se comprimirá antes del envío');
-          
-          // Comprimir imagen 360° en el frontend
-          setMensaje({ tipo: 'success', texto: 'Comprimiendo imagen 360° para optimizar carga...' });
+          setLoadingMessage('Comprimiendo imagen 360° para optimizar carga...');
           
           try {
             const compressedFile = await compressImage360(formulario.imagen360);
@@ -231,8 +295,8 @@ const AdminPage: React.FC = () => {
             console.log(`Imagen 360° comprimida: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
           } catch (error) {
             console.error('Error al comprimir imagen 360°:', error);
-            setMensaje({ tipo: 'error', texto: 'Error al comprimir imagen 360°. Intenta con una imagen más pequeña.' });
-            return;
+            setLoadingMessage('');
+            throw new Error('Error al comprimir imagen 360°. Intenta con una imagen más pequeña.');
           }
         }
       }
@@ -259,7 +323,7 @@ const AdminPage: React.FC = () => {
       }
 
       // Enviar a API (imágenes ya optimizadas en frontend)
-      setMensaje({ tipo: 'success', texto: 'Enviando al servidor...' });
+      setLoadingMessage('Enviando datos al servidor...');
       console.log('Enviando FormData optimizado al servidor...');
 
       const response = await fetch('/api/ubicaciones/agregar', {
@@ -276,6 +340,7 @@ const AdminPage: React.FC = () => {
       const result = await response.json();
       console.log('Ubicación guardada exitosamente:', result);
 
+      setLoadingMessage('');
       setMensaje({ tipo: 'success', texto: '¡Ubicación agregada exitosamente!' });
       
       // Limpiar formulario
@@ -298,12 +363,14 @@ const AdminPage: React.FC = () => {
 
     } catch (error) {
       console.error('Error completo al guardar ubicación:', error);
+      setLoadingMessage('');
       setMensaje({ 
         tipo: 'error', 
         texto: error instanceof Error ? error.message : 'Error desconocido'
       });
     } finally {
       setLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -336,6 +403,19 @@ const AdminPage: React.FC = () => {
             <span className={mensaje.tipo === 'success' ? 'text-green-800' : 'text-red-800'}>
               {mensaje.texto}
             </span>
+          </div>
+        )}
+
+        {/* Indicador de procesamiento */}
+        {loading && loadingMessage && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
+              <div>
+                <h3 className="text-sm font-medium text-blue-800">Procesando datos</h3>
+                <p className="text-sm text-blue-700">{loadingMessage}</p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -615,7 +695,7 @@ const AdminPage: React.FC = () => {
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Guardando...
+                  {loadingMessage || 'Procesando...'}
                 </>
               ) : (
                 <>
