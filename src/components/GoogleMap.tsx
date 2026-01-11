@@ -256,62 +256,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         style={{ minHeight: '400px' }}
       />
       
-      {/* Leyenda */}
-      <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 max-w-xs">
-        <h4 className="text-sm font-semibold text-gray-900 mb-2">Categorías y Estados</h4>
-        
-        {/* Iconos por categoría */}
-        <div className="space-y-1 mb-3">
-          <div className="flex items-center">
-            <div className="w-4 h-4 mr-2 flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 40 40" fill="none" dangerouslySetInnerHTML={{ 
-                __html: obtenerIconoPorCategoria('Mina', '#10B981', '#047857')
-                  .replace(/width="40"/, 'width="16"')
-                  .replace(/height="40"/, 'height="16"')
-                  .replace(/r="18"/, 'r="7"')
-                  .replace(/stroke-width="2"/, 'stroke-width="1"')
-              }} />
-            </div>
-            <span className="text-xs text-gray-700">Minas</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 mr-2 flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 40 40" fill="none" dangerouslySetInnerHTML={{ 
-                __html: obtenerIconoPorCategoria('Hormigonera', '#10B981', '#047857')
-                  .replace(/width="40"/, 'width="16"')
-                  .replace(/height="40"/, 'height="16"')
-                  .replace(/r="18"/, 'r="7"')
-                  .replace(/stroke-width="2"/, 'stroke-width="1"')
-              }} />
-            </div>
-            <span className="text-xs text-gray-700">Hormigoneras</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 mr-2 flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 40 40" fill="none" dangerouslySetInnerHTML={{ 
-                __html: obtenerIconoPorCategoria('Permiso', '#10B981', '#047857')
-                  .replace(/width="40"/, 'width="16"')
-                  .replace(/height="40"/, 'height="16"')
-                  .replace(/r="18"/, 'r="7"')
-                  .replace(/stroke-width="2"/, 'stroke-width="1"')
-              }} />
-            </div>
-            <span className="text-xs text-gray-700">Permisos</span>
-          </div>
-        </div>
-        
-        {/* Estados */}
-        <div className="pt-2 border-t border-gray-200 space-y-1">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-            <span className="text-xs text-gray-700">Activo y vigente</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-            <span className="text-xs text-gray-700">Expirado o inactivo</span>
-          </div>
-        </div>
-      </div>
 
       {/* Error indicator */}
       {mapError && (
