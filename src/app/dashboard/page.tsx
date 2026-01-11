@@ -151,120 +151,30 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard Principal</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Bienvenido, {usuario.nombre}. Aquí puedes gestionar las ubicaciones del mapa.
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={cargarUbicaciones}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center"
-            >
-              🔄 Actualizar
-            </button>
-            {usuario.rol !== 'Viewer' && (
-              <a
-                href="/admin"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Agregar Ubicación
-              </a>
-            )}
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <MapPin className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Total Ubicaciones
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {ubicaciones.length}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <BarChart3 className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Activos
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {ubicaciones.filter(u => u.estado === 'Activo').length}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <AlertCircle className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Inactivos
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {ubicaciones.filter(u => u.estado === 'Inactivo').length}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <span className="text-2xl">360°</span>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Con Vista 360°
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {ubicaciones.filter(u => u.urlFoto360).length}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="h-screen flex flex-col">
+        {/* Controls - Positioned over map */}
+        <div className="absolute top-4 right-4 z-10 flex items-center space-x-2">
+          <select
+            value={filtroCategoria}
+            onChange={(e) => setFiltroCategoria(e.target.value as Categoria | 'Todas')}
+            className="px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          >
+            <option value="Todas">Todas las categorías</option>
+            <option value="Mina">Minas ({ubicaciones.filter(u => u.categoria === 'Mina').length})</option>
+            <option value="Hormigonera">Hormigoneras ({ubicaciones.filter(u => u.categoria === 'Hormigonera').length})</option>
+            <option value="Permiso">Permisos ({ubicaciones.filter(u => u.categoria === 'Permiso').length})</option>
+          </select>
+          <button
+            onClick={cargarUbicaciones}
+            className="px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-lg hover:bg-gray-50 transition-colors text-sm"
+          >
+            🔄
+          </button>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="absolute top-16 left-4 right-4 z-10 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex">
               <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
               <div>
@@ -277,52 +187,27 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Map Section */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                🗺️ Mapa Interactivo
-              </h2>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Filtrar por categoría:
-                </label>
-                <select
-                  value={filtroCategoria}
-                  onChange={(e) => setFiltroCategoria(e.target.value as Categoria | 'Todas')}
-                  className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-                >
-                  <option value="Todas">Todas las categorías</option>
-                  <option value="Mina">Minas ({ubicaciones.filter(u => u.categoria === 'Mina').length})</option>
-                  <option value="Hormigonera">Hormigoneras ({ubicaciones.filter(u => u.categoria === 'Hormigonera').length})</option>
-                  <option value="Permiso">Permisos ({ubicaciones.filter(u => u.categoria === 'Permiso').length})</option>
-                </select>
+        {/* Map Section - Full Screen */}
+        <div className="flex-1">
+          {loadingData ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-gray-600">Cargando mapa...</p>
               </div>
             </div>
-          </div>
-          
-          <div className="p-4">
-            {loadingData ? (
-              <div className="h-[70vh] flex items-center justify-center">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-gray-600">Cargando mapa...</p>
-                </div>
-              </div>
-            ) : (
-              <GoogleMap
-                ubicaciones={ubicaciones}
-                onMarkerClick={handleMarkerClick}
-                centro={ubicaciones.length > 0 ? 
-                  { lat: ubicaciones[0].latitud, lng: ubicaciones[0].longitud } : 
-                  { lat: 18.626560805395105, lng: -68.70765075761358 }
-                }
-                className="w-full h-[70vh] rounded-lg"
-                filtroCategoria={filtroCategoria}
-              />
-            )}
-          </div>
+          ) : (
+            <GoogleMap
+              ubicaciones={ubicaciones}
+              onMarkerClick={handleMarkerClick}
+              centro={ubicaciones.length > 0 ? 
+                { lat: ubicaciones[0].latitud, lng: ubicaciones[0].longitud } : 
+                { lat: 18.626560805395105, lng: -68.70765075761358 }
+              }
+              className="w-full h-full"
+              filtroCategoria={filtroCategoria}
+            />
+          )}
         </div>
 
         {/* Popups */}
