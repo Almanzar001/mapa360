@@ -153,16 +153,27 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       : ubicaciones.filter(u => u.categoria === filtroCategoria);
     
     const newMarkers = ubicacionesFiltradas.map(ubicacion => {
-      // Determinar si la ubicación ha expirado basándose en vigencia
-      const fechaActual = new Date();
-      const fechaEmision = new Date(ubicacion.fechaEmision);
-      const fechaVencimiento = new Date(fechaEmision);
-      fechaVencimiento.setDate(fechaVencimiento.getDate() + ubicacion.vigencia);
-      const haExpirado = fechaActual > fechaVencimiento;
+      // Calcular información de vigencia usando las utilidades
+      const infoVigencia = calcularInfoVigencia(ubicacion.fechaEmision, ubicacion.vigencia);
       
-      // Determinar color del marcador: rojo si expiró o está inactivo, verde si está activo y vigente
-      const iconColor = (haExpirado || ubicacion.estado === 'Inactivo') ? '#EF4444' : '#10B981'; // Rojo o Verde
-      const borderColor = (haExpirado || ubicacion.estado === 'Inactivo') ? '#DC2626' : '#047857';
+      // Determinar color del marcador basado en vigencia y estado
+      let iconColor, borderColor;
+      if (ubicacion.estado === 'Inactivo') {
+        iconColor = '#EF4444'; // Rojo para inactivo
+        borderColor = '#DC2626';
+      } else if (infoVigencia.estaVencido) {
+        iconColor = '#EF4444'; // Rojo para vencido
+        borderColor = '#DC2626';
+      } else if (infoVigencia.estaCritico) {
+        iconColor = '#EAB308'; // Amarillo para crítico (7 días o menos)
+        borderColor = '#CA8A04';
+      } else if (infoVigencia.estaProximoAVencer) {
+        iconColor = '#F97316'; // Naranja para próximo a vencer
+        borderColor = '#EA580C';
+      } else {
+        iconColor = '#10B981'; // Verde para activo y vigente
+        borderColor = '#047857';
+      }
 
       // Crear icono SVG personalizado según categoría
       const icon = {
@@ -186,21 +197,24 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
       // Determinar texto y color para el estado
       let estadoTexto, estadoColor;
-      if (haExpirado) {
-        estadoTexto = 'Expirado';
-        estadoColor = 'text-red-600';
-      } else if (ubicacion.estado === 'Inactivo') {
+      if (ubicacion.estado === 'Inactivo') {
         estadoTexto = 'Inactivo';
         estadoColor = 'text-red-600';
+      } else if (infoVigencia.estaVencido) {
+        estadoTexto = 'Expirado';
+        estadoColor = 'text-red-600';
+      } else if (infoVigencia.estaCritico) {
+        estadoTexto = 'Crítico';
+        estadoColor = 'text-yellow-600';
+      } else if (infoVigencia.estaProximoAVencer) {
+        estadoTexto = 'Próximo a vencer';
+        estadoColor = 'text-orange-600';
       } else {
         estadoTexto = 'Activo';
         estadoColor = 'text-green-600';
       }
       
       const nombreCategoria = obtenerNombreCategoria(ubicacion.categoria);
-      
-      // Calcular información de vigencia
-      const infoVigencia = calcularInfoVigencia(ubicacion.fechaEmision, ubicacion.vigencia);
       const vigenciaFormateada = formatearVigencia(infoVigencia);
       
       // Agregar tooltip al hacer hover

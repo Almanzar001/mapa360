@@ -7,6 +7,7 @@ export interface InfoVigencia {
   porcentajeTranscurrido: number; // Porcentaje del período transcurrido
   estaVencido: boolean;         // Si ya venció
   estaProximoAVencer: boolean;  // Si vence en los próximos 30 días
+  estaCritico: boolean;         // Si vence en los próximos 7 días
 }
 
 /**
@@ -32,7 +33,8 @@ export function calcularInfoVigencia(fechaEmision: string, vigenciaDias: number)
 
   // Estado de vigencia
   const estaVencido = diasRestantes < 0;
-  const estaProximoAVencer = !estaVencido && diasRestantes <= 30;
+  const estaCritico = !estaVencido && diasRestantes <= 7;
+  const estaProximoAVencer = !estaVencido && !estaCritico && diasRestantes <= 30;
 
   return {
     diasTranscurridos: Math.max(0, diasTranscurridos),
@@ -40,7 +42,8 @@ export function calcularInfoVigencia(fechaEmision: string, vigenciaDias: number)
     diasVencido,
     porcentajeTranscurrido,
     estaVencido,
-    estaProximoAVencer
+    estaProximoAVencer,
+    estaCritico
   };
 }
 
@@ -60,6 +63,17 @@ export function formatearVigencia(info: InfoVigencia): {
       texto,
       color: 'text-red-600',
       icono: '⚠️'
+    };
+  }
+
+  if (info.estaCritico) {
+    const texto = info.diasRestantes === 1 
+      ? `¡Vence mañana!`
+      : `¡Vence en ${info.diasRestantes} días!`;
+    return {
+      texto,
+      color: 'text-yellow-600',
+      icono: '🚨'
     };
   }
 
@@ -110,6 +124,7 @@ export function formatearFecha(fecha: Date): string {
  */
 export function obtenerColorProgreso(info: InfoVigencia): string {
   if (info.estaVencido) return 'bg-red-500';
+  if (info.estaCritico) return 'bg-yellow-500';
   if (info.estaProximoAVencer) return 'bg-orange-500';
   return 'bg-green-500';
 }
