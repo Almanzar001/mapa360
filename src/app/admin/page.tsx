@@ -214,6 +214,18 @@ const AdminPage: React.FC = () => {
         throw new Error('Formato de ubicación inválido. Use el formato: latitud,longitud (ej: 18.626,-68.707)');
       }
 
+      // Validar tamaño de imágenes (máximo 5MB cada una)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      for (let i = 0; i < formulario.imagenesConvencionales.length; i++) {
+        if (formulario.imagenesConvencionales[i].size > maxSize) {
+          throw new Error(`Imagen ${i + 1} es muy grande. Máximo 5MB por imagen.`);
+        }
+      }
+
+      if (formulario.imagen360 && formulario.imagen360.size > maxSize) {
+        throw new Error('Imagen 360° es muy grande. Máximo 5MB.');
+      }
+
       // Crear FormData
       const formData = new FormData();
       formData.append('nombre', formulario.nombre);
@@ -235,9 +247,14 @@ const AdminPage: React.FC = () => {
         formData.append('imagen360', formulario.imagen360);
       }
 
-      // Enviar a API con timeout
+      // Enviar a API con timeout (más tiempo si hay imágenes)
+      const hasImages = formulario.imagenesConvencionales.length > 0 || formulario.imagen360;
+      const timeoutMs = hasImages ? 120000 : 60000; // 2 minutos con imágenes, 1 minuto sin imágenes
+      
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos timeout
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      console.log(`Enviando ubicación con ${formulario.imagenesConvencionales.length} imágenes convencionales y ${formulario.imagen360 ? '1' : '0'} imagen 360°`);
 
       try {
         const response = await fetch('/api/ubicaciones/agregar', {
