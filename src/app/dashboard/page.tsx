@@ -152,29 +152,29 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="h-screen flex flex-col">
-        {/* Map Controls */}
-        <div className="absolute top-4 right-4 z-10 flex items-center space-x-2">
+        {/* Map Controls - Responsive */}
+        <div className="absolute top-4 left-4 right-4 z-10 flex flex-col sm:flex-row sm:justify-end items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
           <select
             value={filtroCategoria}
             onChange={(e) => setFiltroCategoria(e.target.value as Categoria | 'Todas')}
-            className="px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            className="w-full sm:w-auto px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           >
-            <option value="Todas">Todas las categorías</option>
+            <option value="Todas">Todas</option>
             <option value="Mina">Minas ({ubicaciones.filter(u => u.categoria === 'Mina').length})</option>
             <option value="Hormigonera">Hormigoneras ({ubicaciones.filter(u => u.categoria === 'Hormigonera').length})</option>
             <option value="Permiso">Permisos ({ubicaciones.filter(u => u.categoria === 'Permiso').length})</option>
           </select>
           <button
             onClick={cargarUbicaciones}
-            className="px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-lg hover:bg-gray-50 transition-colors text-sm"
+            className="w-full sm:w-auto px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-lg hover:bg-gray-50 transition-colors text-sm font-medium"
           >
-            🔄
+            🔄 Actualizar
           </button>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="absolute top-16 left-4 right-4 z-10 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="absolute top-24 sm:top-16 left-4 right-4 z-10 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex">
               <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
               <div>

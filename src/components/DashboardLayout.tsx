@@ -82,7 +82,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
           
           {/* Mobile user section */}
-          <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+          <div className="flex-shrink-0 flex justify-between items-center border-t border-gray-200 p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -94,6 +94,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <p className="text-sm font-medium text-gray-500">{usuario?.email}</p>
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="text-gray-400 hover:text-red-600 transition-colors p-2"
+              title="Cerrar sesión"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </div>
