@@ -153,7 +153,7 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div className="h-screen flex flex-col">
         {/* Map Controls - Responsive */}
-        <div className="absolute top-4 left-4 right-4 z-10 flex flex-col sm:flex-row sm:justify-end items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+        <div className="absolute top-16 md:top-4 left-4 right-4 z-10 flex flex-col sm:flex-row sm:justify-end items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
           <select
             value={filtroCategoria}
             onChange={(e) => setFiltroCategoria(e.target.value as Categoria | 'Todas')}
@@ -174,7 +174,7 @@ export default function DashboardPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="absolute top-24 sm:top-16 left-4 right-4 z-10 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="absolute top-32 md:top-16 left-4 right-4 z-10 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex">
               <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
               <div>
