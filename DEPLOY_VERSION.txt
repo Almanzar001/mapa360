@@ -1,0 +1,4 @@
+Dashboard cleanup - Clean minimalist design like Google Maps
+Version: d976d57
+Date: 2026-01-11
+Changes: Removed all cards, headers, buttons - Only map with floating controls
