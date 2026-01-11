@@ -115,9 +115,7 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
                 ? 'bg-red-50 border-red-200' 
                 : infoVigencia.estaCritico 
                   ? 'bg-yellow-50 border-yellow-200'
-                  : infoVigencia.estaProximoAVencer 
-                    ? 'bg-orange-50 border-orange-200'
-                    : 'bg-green-50 border-green-200'
+                  : 'bg-green-50 border-green-200'
             }`}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">

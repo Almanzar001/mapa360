@@ -167,11 +167,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       } else if (infoVigencia.estaCritico) {
         iconColor = '#EAB308'; // Amarillo para crítico (7 días o menos)
         borderColor = '#CA8A04';
-      } else if (infoVigencia.estaProximoAVencer) {
-        iconColor = '#F97316'; // Naranja para próximo a vencer
-        borderColor = '#EA580C';
       } else {
-        iconColor = '#10B981'; // Verde para activo y vigente
+        iconColor = '#10B981'; // Verde para todo lo demás
         borderColor = '#047857';
       }
 
@@ -206,9 +203,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       } else if (infoVigencia.estaCritico) {
         estadoTexto = 'Crítico';
         estadoColor = 'text-yellow-600';
-      } else if (infoVigencia.estaProximoAVencer) {
-        estadoTexto = 'Próximo a vencer';
-        estadoColor = 'text-orange-600';
       } else {
         estadoTexto = 'Activo';
         estadoColor = 'text-green-600';
