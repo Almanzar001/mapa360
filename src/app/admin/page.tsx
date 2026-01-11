@@ -46,6 +46,41 @@ const AdminPage: React.FC = () => {
       });
     }
   };
+
+  const testSaveEndpoint = async () => {
+    try {
+      // Test básico del endpoint de guardar sin imágenes
+      const testFormData = new FormData();
+      testFormData.append('nombre', 'Test Location');
+      testFormData.append('ubicacion', '18.5,-69.0');
+      testFormData.append('fechaEmision', '2024-01-01');
+      testFormData.append('fechaFinalizacion', '2025-01-01'); 
+      testFormData.append('estado', 'Activo');
+      testFormData.append('categoria', 'Permiso');
+      testFormData.append('vigencia', '365');
+      testFormData.append('notas', 'Test sin imágenes');
+
+      const response = await fetch('/api/ubicaciones/agregar', {
+        method: 'POST',
+        body: testFormData,
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      console.log('Save test result:', result);
+      
+      setMensaje({
+        tipo: response.ok ? 'success' : 'error',
+        texto: response.ok ? `Save OK: ${result.mensaje}` : `Save Error: ${result.error}`
+      });
+    } catch (error) {
+      console.error('Save test failed:', error);
+      setMensaje({
+        tipo: 'error',
+        texto: `Save test failed: ${error.message}`
+      });
+    }
+  };
   const [previewImagenes, setPreviewImagenes] = useState<string[]>([]);
   const [preview360, setPreview360] = useState<string>('');
 
@@ -561,9 +596,16 @@ const AdminPage: React.FC = () => {
             <button
               type="button"
               onClick={testConnection}
-              className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm"
+              className="px-3 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm"
             >
               Test API
+            </button>
+            <button
+              type="button"
+              onClick={testSaveEndpoint}
+              className="px-3 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm"
+            >
+              Test Save
             </button>
             <button
               type="button"
