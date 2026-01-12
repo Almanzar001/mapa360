@@ -9,7 +9,7 @@ import InfoPopup from '@/components/InfoPopup';
 import Visor360 from '@/components/Visor360';
 import FormularioEdicion from '@/components/FormularioEdicion';
 import { Ubicacion, Categoria } from '@/types';
-import { MapPin, Plus, BarChart3, AlertCircle } from 'lucide-react';
+import { MapPin, Plus, BarChart3, AlertCircle, Navigation } from 'lucide-react';
 
 export default function DashboardPage() {
   const { usuario, loading } = useAuth();
@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [showFormularioEdicion, setShowFormularioEdicion] = useState(false);
   const [ubicacionAEditar, setUbicacionAEditar] = useState<Ubicacion | null>(null);
+  const [centroMapa, setCentroMapa] = useState<{ lat: number; lng: number } | null>(null);
 
   // Redireccionar si no está autenticado
   useEffect(() => {
@@ -144,6 +145,30 @@ export default function DashboardPage() {
     }
   };
 
+  const centrarEnMiUbicacion = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCentroMapa({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error('Error obteniendo ubicación:', error);
+          alert('No se pudo obtener tu ubicación. Verifica los permisos de ubicación.');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    } else {
+      alert('Tu navegador no soporta geolocalización');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -207,6 +232,15 @@ export default function DashboardPage() {
             )}
           </div>
 
+          {/* Mi Ubicación Button */}
+          <button
+            onClick={centrarEnMiUbicacion}
+            className="w-12 h-12 bg-white rounded-full shadow-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+            title="Centrar en mi ubicación"
+          >
+            <Navigation className="w-5 h-5 text-gray-600" />
+          </button>
+
           {/* Refresh Button */}
           <button
             onClick={cargarUbicaciones}
@@ -247,12 +281,16 @@ export default function DashboardPage() {
             <GoogleMap
               ubicaciones={ubicaciones}
               onMarkerClick={handleMarkerClick}
-              centro={ubicaciones.length > 0 ? 
-                { lat: ubicaciones[0].latitud, lng: ubicaciones[0].longitud } : 
-                { lat: 18.626560805395105, lng: -68.70765075761358 }
+              centro={
+                centroMapa || 
+                (ubicaciones.length > 0 ? 
+                  { lat: ubicaciones[0].latitud, lng: ubicaciones[0].longitud } : 
+                  { lat: 18.626560805395105, lng: -68.70765075761358 }
+                )
               }
               className="w-full h-full"
               filtroCategoria={filtroCategoria}
+              mostrarUbicacionUsuario={true}
             />
           )}
         </div>

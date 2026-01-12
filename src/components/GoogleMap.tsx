@@ -18,6 +18,7 @@ interface GoogleMapProps {
   centro?: { lat: number; lng: number };
   className?: string;
   filtroCategoria?: Categoria | 'Todas';
+  mostrarUbicacionUsuario?: boolean;
 }
 
 const GoogleMap: React.FC<GoogleMapProps> = ({
@@ -26,11 +27,14 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   centro = { lat: 18.626560805395105, lng: -68.70765075761358 }, // Centro en la ubicación existente
   className = 'w-full h-96',
   filtroCategoria = 'Todas',
+  mostrarUbicacionUsuario = true,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [ubicacionUsuario, setUbicacionUsuario] = useState<{ lat: number; lng: number } | null>(null);
+  const [marcadorUsuario, setMarcadorUsuario] = useState<any>(null);
 
   // Cargar Google Maps dinámicamente
   useEffect(() => {
@@ -139,6 +143,83 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
     loadGoogleMaps();
   }, [centro]);
+
+  // Obtener ubicación del usuario
+  useEffect(() => {
+    if (mostrarUbicacionUsuario && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUbicacionUsuario({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Error obteniendo ubicación del usuario:', error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutos
+        }
+      );
+    }
+  }, [mostrarUbicacionUsuario]);
+
+  // Crear marcador de ubicación del usuario
+  useEffect(() => {
+    if (!map || !ubicacionUsuario || !mostrarUbicacionUsuario) return;
+
+    // Limpiar marcador anterior si existe
+    if (marcadorUsuario) {
+      marcadorUsuario.setMap(null);
+    }
+
+    // Crear icono personalizado para el usuario
+    const iconoUsuario = {
+      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+          <circle cx="12" cy="12" r="8" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
+          <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
+        </svg>
+      `)}`,
+      scaledSize: new window.google.maps.Size(24, 24),
+      anchor: new window.google.maps.Point(12, 12),
+    };
+
+    // Crear marcador del usuario
+    const nuevoMarcadorUsuario = new window.google.maps.Marker({
+      position: ubicacionUsuario,
+      map: map,
+      title: 'Tu ubicación',
+      icon: iconoUsuario,
+      zIndex: 1000, // Asegurar que esté encima de otros marcadores
+    });
+
+    // Agregar InfoWindow
+    const infoWindow = new window.google.maps.InfoWindow({
+      content: `
+        <div class="p-2 text-center">
+          <h3 class="font-semibold text-blue-600">📍 Tu ubicación</h3>
+          <p class="text-xs text-gray-600 mt-1">
+            ${ubicacionUsuario.lat.toFixed(6)}, ${ubicacionUsuario.lng.toFixed(6)}
+          </p>
+        </div>
+      `,
+    });
+
+    nuevoMarcadorUsuario.addListener('click', () => {
+      infoWindow.open(map, nuevoMarcadorUsuario);
+    });
+
+    setMarcadorUsuario(nuevoMarcadorUsuario);
+
+    return () => {
+      if (nuevoMarcadorUsuario) {
+        nuevoMarcadorUsuario.setMap(null);
+      }
+    };
+  }, [map, ubicacionUsuario, mostrarUbicacionUsuario]);
 
   // Crear marcadores cuando cambian las ubicaciones
   useEffect(() => {
