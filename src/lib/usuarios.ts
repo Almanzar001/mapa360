@@ -217,15 +217,17 @@ export async function validarCredenciales(email: string, password: string): Prom
   }
 }
 
-export async function actualizarUsuario(id: string, datos: Partial<Usuario>): Promise<boolean> {
+export async function actualizarUsuario(id: string, datos: Partial<Usuario> & { password?: string }): Promise<boolean> {
   try {
-    const updateData = {
+    const updateData: any = {
       Id: parseInt(id),
-      ...(datos.nombre && { Nombre: datos.nombre }),
-      ...(datos.email && { Email: datos.email }),
-      ...(datos.rol && { Rol: datos.rol }),
-      ...(datos.estado && { Estado: datos.estado }),
     };
+
+    if (datos.nombre) updateData.Nombre = datos.nombre;
+    if (datos.email) updateData.Email = datos.email;
+    if (datos.rol) updateData.Rol = datos.rol;
+    if (datos.estado) updateData.Estado = datos.estado;
+    if (datos.password) updateData.Password = datos.password;
 
     const response = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_USUARIOS_TABLE_ID}/records`, {
       method: 'PATCH',

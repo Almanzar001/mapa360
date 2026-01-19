@@ -175,16 +175,25 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       marcadorUsuario.setMap(null);
     }
 
-    // Crear icono personalizado para el usuario
+    // Crear icono personalizado para el usuario (más grande con icono de usuario)
     const iconoUsuario = {
       url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-          <circle cx="12" cy="12" r="8" fill="#3B82F6" stroke="#FFFFFF" stroke-width="2"/>
-          <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+          <!-- Sombra exterior -->
+          <circle cx="24" cy="26" r="18" fill="rgba(0, 0, 0, 0.15)"/>
+          <!-- Círculo principal azul -->
+          <circle cx="24" cy="24" r="18" fill="#3B82F6" stroke="#FFFFFF" stroke-width="3"/>
+          <!-- Icono de usuario -->
+          <g transform="translate(24, 24)" fill="#FFFFFF">
+            <!-- Cabeza -->
+            <circle cx="0" cy="-4" r="5"/>
+            <!-- Cuerpo -->
+            <path d="M -7 8 Q -7 2, 0 2 Q 7 2, 7 8 L 7 10 L -7 10 Z"/>
+          </g>
         </svg>
       `)}`,
-      scaledSize: new window.google.maps.Size(24, 24),
-      anchor: new window.google.maps.Point(12, 12),
+      scaledSize: new window.google.maps.Size(48, 48),
+      anchor: new window.google.maps.Point(24, 24),
     };
 
     // Crear marcador del usuario
