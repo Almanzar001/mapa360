@@ -42,7 +42,7 @@ export async function PUT(
     }
 
     // Preparar datos para actualización
-    const ubicacionActualizada = {
+    const ubicacionActualizada: any = {
       id,
       nombre: data.nombre,
       ubicacion: data.ubicacion,
@@ -53,6 +53,15 @@ export async function PUT(
       vigencia: parseInt(data.vigencia),
       notas: data.notas || '',
     };
+
+    // Incluir imágenes si se proporcionan
+    if (data.urlImagenes !== undefined) {
+      ubicacionActualizada.urlImagenes = data.urlImagenes;
+    }
+
+    if (data.urlFoto360 !== undefined) {
+      ubicacionActualizada.urlFoto360 = data.urlFoto360;
+    }
 
     console.log('Actualizando ubicación:', id, ubicacionActualizada);
 

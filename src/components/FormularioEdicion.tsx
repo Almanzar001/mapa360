@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Save, Upload, Camera, Tag, Calendar, MapPin, AlertCircle, CheckCircle, Clock, Edit } from 'lucide-react';
+import { X, Save, Upload, Camera, Tag, Calendar, MapPin, AlertCircle, CheckCircle, Clock, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
 import { Ubicacion, Categoria } from '@/types';
 import { validarUbicacion } from '@/lib/ubicacion-utils';
 import { obtenerNombreCategoria } from '@/lib/iconos-categoria';
@@ -31,7 +31,15 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+
+  // Estados para gestión de imágenes
+  const [imagenesActuales, setImagenesActuales] = useState<string[]>(ubicacion.urlImagenes || []);
+  const [nuevasImagenes, setNuevasImagenes] = useState<File[]>([]);
+  const [previewNuevasImagenes, setPreviewNuevasImagenes] = useState<string[]>([]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Actualizar formData cuando cambie la ubicación
   useEffect(() => {
@@ -45,6 +53,9 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
       vigencia: ubicacion.vigencia,
       notas: ubicacion.notas || '',
     });
+    setImagenesActuales(ubicacion.urlImagenes || []);
+    setNuevasImagenes([]);
+    setPreviewNuevasImagenes([]);
   }, [ubicacion]);
 
   const handleInputChange = (
@@ -57,10 +68,88 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
     }));
   };
 
+  // Función para comprimir imágenes convencionales
+  const compressConventionalImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        let targetWidth = img.width;
+        let targetHeight = img.height;
+        const maxDimension = 2048;
+
+        if (img.width > maxDimension || img.height > maxDimension) {
+          if (img.width > img.height) {
+            targetWidth = maxDimension;
+            targetHeight = (img.height / img.width) * maxDimension;
+          } else {
+            targetHeight = maxDimension;
+            targetWidth = (img.width / img.height) * maxDimension;
+          }
+        }
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        }
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            reject(new Error('Error al comprimir imagen'));
+          }
+        }, 'image/jpeg', 0.85);
+      };
+
+      img.onerror = () => reject(new Error('Error al cargar imagen para compresión'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Manejar eliminación de imagen existente
+  const handleEliminarImagenActual = (index: number) => {
+    setImagenesActuales(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Manejar selección de nuevas imágenes
+  const handleNuevasImagenesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setNuevasImagenes(prev => [...prev, ...files]);
+
+      // Crear previews
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setPreviewNuevasImagenes(prev => [...prev, e.target?.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  // Manejar eliminación de nueva imagen (antes de subir)
+  const handleEliminarNuevaImagen = (index: number) => {
+    setNuevasImagenes(prev => prev.filter((_, i) => i !== index));
+    setPreviewNuevasImagenes(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMensaje(null);
+    setLoadingMessage('Validando datos...');
 
     try {
       // Validaciones
@@ -77,13 +166,54 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
         throw new Error('La vigencia debe ser al menos 1 día');
       }
 
-      // Enviar a API
+      // Array final de URLs de imágenes (empezar con las actuales que no se eliminaron)
+      let urlImagenesFinales = [...imagenesActuales];
+
+      // Si hay nuevas imágenes, subirlas
+      if (nuevasImagenes.length > 0) {
+        setLoadingMessage(`Subiendo ${nuevasImagenes.length} imagen(es)...`);
+
+        const formDataUpload = new FormData();
+
+        // Comprimir y agregar imágenes
+        for (let i = 0; i < nuevasImagenes.length; i++) {
+          setLoadingMessage(`Comprimiendo imagen ${i + 1}/${nuevasImagenes.length}...`);
+          const compressedImage = await compressConventionalImage(nuevasImagenes[i]);
+          formDataUpload.append('imagenes', compressedImage);
+        }
+
+        setLoadingMessage('Subiendo imágenes al servidor...');
+
+        // Subir imágenes
+        const uploadResponse = await fetch('/api/ubicaciones/upload-images', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Error al subir las imágenes');
+        }
+
+        const uploadData = await uploadResponse.json();
+
+        // Agregar las nuevas URLs al array final
+        if (uploadData.urls && Array.isArray(uploadData.urls)) {
+          urlImagenesFinales = [...urlImagenesFinales, ...uploadData.urls];
+        }
+      }
+
+      setLoadingMessage('Actualizando ubicación...');
+
+      // Enviar a API con el array completo de imágenes
       const response = await fetch(`/api/ubicaciones/${ubicacion.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          urlImagenes: urlImagenesFinales,
+        }),
       });
 
       if (!response.ok) {
@@ -92,11 +222,12 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
       }
 
       setMensaje({ tipo: 'success', texto: '¡Ubicación actualizada exitosamente!' });
-      
+
       // Crear objeto ubicación actualizada
       const ubicacionActualizada: Ubicacion = {
         ...ubicacion,
         ...formData,
+        urlImagenes: urlImagenesFinales,
       };
 
       // Notificar al componente padre
@@ -108,12 +239,13 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
       }, 1500);
 
     } catch (error) {
-      setMensaje({ 
-        tipo: 'error', 
-        texto: error instanceof Error ? error.message : 'Error desconocido' 
+      setMensaje({
+        tipo: 'error',
+        texto: error instanceof Error ? error.message : 'Error desconocido'
       });
     } finally {
       setLoading(false);
+      setLoadingMessage('');
     }
   };
 
@@ -299,6 +431,96 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
               />
             </div>
 
+            {/* Gestión de Imágenes */}
+            <div className="mb-6 border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <ImageIcon className="w-5 h-5 mr-2 text-blue-600" />
+                Gestión de Imágenes
+              </h3>
+
+              {/* Imágenes Actuales */}
+              {imagenesActuales.length > 0 && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Imágenes Actuales ({imagenesActuales.length})
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {imagenesActuales.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Imagen ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border-2 border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarImagenActual(index)}
+                          className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          title="Eliminar imagen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Nuevas Imágenes (Preview) */}
+              {previewNuevasImagenes.length > 0 && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nuevas Imágenes a Subir ({previewNuevasImagenes.length})
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {previewNuevasImagenes.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={preview}
+                          alt={`Nueva imagen ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border-2 border-green-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarNuevaImagen(index)}
+                          className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          title="Eliminar imagen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <div className="absolute bottom-1 left-1 px-2 py-0.5 bg-green-500 text-white text-xs rounded">
+                          Nueva
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Botón para agregar nuevas imágenes */}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleNuevasImagenesChange}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center"
+                >
+                  <Upload className="w-5 h-5 mr-2 text-blue-600" />
+                  <span className="text-gray-700">Agregar Más Imágenes</span>
+                </button>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Total de imágenes: {imagenesActuales.length + nuevasImagenes.length}
+                </p>
+              </div>
+            </div>
+
             {/* Botones */}
             <div className="flex items-center justify-end space-x-4 pt-4 border-t">
               <button
@@ -317,7 +539,7 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Guardando...
+                    {loadingMessage || 'Guardando...'}
                   </>
                 ) : (
                   <>
