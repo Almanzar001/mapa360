@@ -1,6 +1,7 @@
 // Tipos para la aplicación Mapa 360°
 
 export type Categoria = 'Mina' | 'Hormigonera' | 'Permiso';
+export type TienePermiso = 'Tiene' | 'No Tiene';
 
 // Tipos para sistema de usuarios y autenticación
 export type Rol = 'SuperAdmin' | 'Admin' | 'Editor' | 'Viewer' | 'add';
@@ -40,15 +41,15 @@ export interface Ubicacion {
   id: string;
   nombre: string;
   ubicacion: string;      // Formato: "latitud,longitud" ej: "18.626,-68.707"
-  fechaEmision: string;
-  fechaFinalizacion: string;
+  fechaEmision?: string;  // Opcional si no tiene permiso
   estado: 'Activo' | 'Inactivo';
   categoria: Categoria;   // Nueva categoría
-  vigencia: number;       // Días de vigencia del permiso
+  vigencia?: number;      // Opcional si no tiene permiso - Días de vigencia del permiso
+  permiso: TienePermiso;  // 'Tiene' o 'No Tiene'
   urlImagenes: string[];  // URLs de imágenes convencionales
   urlFoto360: string;     // URL de imagen 360°
   notas?: string;
-  
+
   // Propiedades calculadas para compatibilidad
   get latitud(): number;
   get longitud(): number;
@@ -88,12 +89,12 @@ export interface Visor360Props {
 
 export interface FormularioAdmin {
   nombre: string;
-  ubicacion: string;       // Campo unificado "latitud,longitud" 
+  ubicacion: string;       // Campo unificado "latitud,longitud"
   fechaEmision: string;
-  fechaFinalizacion: string;
   estado: 'Activo' | 'Inactivo';
   categoria: Categoria;    // Nueva categoría
   vigencia: number;        // Días de vigencia
+  permiso: TienePermiso;   // 'Tiene' o 'No Tiene'
   imagenesConvencionales: File[];
   imagen360: File | null;
   notas: string;

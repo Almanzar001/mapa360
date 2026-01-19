@@ -18,11 +18,12 @@ export async function POST(request: NextRequest) {
     // Extraer datos del formulario
     const nombre = formData.get('nombre') as string;
     const ubicacion = formData.get('ubicacion') as string;
-    const fechaEmision = formData.get('fechaEmision') as string;
-    const fechaFinalizacion = formData.get('fechaFinalizacion') as string;
+    const fechaEmision = formData.get('fechaEmision') as string || '';
     const estado = formData.get('estado') as 'Activo' | 'Inactivo';
     const categoria = formData.get('categoria') as 'Mina' | 'Hormigonera' | 'Permiso';
-    const vigencia = parseInt(formData.get('vigencia') as string) || 365;
+    const permiso = formData.get('permiso') as 'Tiene' | 'No Tiene';
+    const vigenciaStr = formData.get('vigencia') as string;
+    const vigencia = vigenciaStr ? parseInt(vigenciaStr) : undefined;
     const notas = formData.get('notas') as string || '';
 
     // Procesar imágenes convencionales
@@ -37,9 +38,17 @@ export async function POST(request: NextRequest) {
     const imagen360 = formData.get('imagen360') as File | null;
 
     // Validaciones
-    if (!nombre || !ubicacion || !fechaEmision || !fechaFinalizacion || !categoria || !vigencia) {
+    if (!nombre || !ubicacion || !categoria || !permiso) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos' },
+        { status: 400 }
+      );
+    }
+
+    // Validar campos específicos si tiene permiso
+    if (permiso === 'Tiene' && (!fechaEmision || !vigencia)) {
+      return NextResponse.json(
+        { error: 'Fecha de emisión y vigencia son requeridas cuando tiene permiso' },
         { status: 400 }
       );
     }
@@ -104,9 +113,9 @@ export async function POST(request: NextRequest) {
       nombre,
       ubicacion,
       fechaEmision,
-      fechaFinalizacion,
       estado,
       categoria,
+      permiso,
       vigencia,
       urlImagenes,
       urlFoto360,
@@ -118,9 +127,9 @@ export async function POST(request: NextRequest) {
       nombre,
       ubicacion,
       fechaEmision,
-      fechaFinalizacion,
       estado,
       categoria,
+      permiso,
       vigencia,
       urlImagenes,
       urlFoto360,

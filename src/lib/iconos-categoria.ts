@@ -1,10 +1,16 @@
-import { Categoria } from '@/types';
+import { Categoria, TienePermiso } from '@/types';
 
 export function obtenerIconoPorCategoria(
   categoria: Categoria,
   iconColor: string,
-  borderColor: string
+  borderColor: string,
+  tienePermiso?: TienePermiso
 ): string {
+  // Sobrescribir colores con naranja brillante si no tiene permiso
+  if (tienePermiso === 'No Tiene') {
+    iconColor = '#FF8C00'; // Naranja brillante
+    borderColor = '#FF6600'; // Naranja más oscuro para el borde
+  }
   switch (categoria) {
     case 'Mina':
       return `
@@ -88,7 +94,15 @@ export function obtenerIconoPorCategoria(
   }
 }
 
-export function obtenerColorCategoria(categoria: Categoria): { icon: string; border: string } {
+export function obtenerColorCategoria(
+  categoria: Categoria,
+  tienePermiso?: TienePermiso
+): { icon: string; border: string } {
+  // Si no tiene permiso, devolver naranja brillante independientemente de la categoría
+  if (tienePermiso === 'No Tiene') {
+    return { icon: '#FF8C00', border: '#FF6600' }; // Naranja brillante
+  }
+
   switch (categoria) {
     case 'Mina':
       return { icon: '#8B5A00', border: '#654200' }; // Marrón/dorado para mina

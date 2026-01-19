@@ -115,11 +115,11 @@ export async function obtenerUbicaciones(): Promise<Ubicacion[]> {
         id: row.Id?.toString() || '',
         nombre: row.Nombre || '',
         ubicacion,
-        fechaEmision: row.Fecha_Emision || '',
-        fechaFinalizacion: row.Fecha_Finalizacion || '',
+        fechaEmision: row.Fecha_Emision || undefined,
         estado: (row.Estado as 'Activo' | 'Inactivo') || 'Inactivo',
         categoria: (row.Categoria as Categoria) || 'Permiso',
-        vigencia: parseInt(row.Vigencia) || 365, // Default 1 año si no se especifica
+        vigencia: row.Vigencia ? parseInt(row.Vigencia) : undefined,
+        permiso: row.Permiso || 'Tiene', // Default 'Tiene' si no se especifica
         urlImagenes,
         urlFoto360,
         notas: row.Notas || '',
@@ -157,11 +157,11 @@ export async function agregarUbicacion(ubicacion: Omit<Ubicacion, 'id'>): Promis
     const data = {
       Nombre: ubicacion.nombre,
       Ubicacion: ubicacion.ubicacion, // Nuevo campo unificado
-      Fecha_Emision: ubicacion.fechaEmision,
-      Fecha_Finalizacion: ubicacion.fechaFinalizacion,
       Estado: ubicacion.estado,
       Categoria: ubicacion.categoria,
-      Vigencia: ubicacion.vigencia,
+      Permiso: ubicacion.permiso,
+      ...(ubicacion.fechaEmision && { Fecha_Emision: ubicacion.fechaEmision }),
+      ...(ubicacion.vigencia && { Vigencia: ubicacion.vigencia }),
       URL_Imagenes: urlImagenesJson,
       URL_Foto_360: urlFoto360Json,
       Notas: ubicacion.notas || '',
@@ -196,11 +196,11 @@ export async function actualizarUbicacion(id: string, ubicacion: Partial<Ubicaci
       Id: parseInt(id), // ID debe ser entero
       ...(ubicacion.nombre && { Nombre: ubicacion.nombre }),
       ...(ubicacion.ubicacion && { Ubicacion: ubicacion.ubicacion }),
-      ...(ubicacion.fechaEmision && { Fecha_Emision: ubicacion.fechaEmision }),
-      ...(ubicacion.fechaFinalizacion && { Fecha_Finalizacion: ubicacion.fechaFinalizacion }),
+      ...(ubicacion.fechaEmision !== undefined && { Fecha_Emision: ubicacion.fechaEmision }),
       ...(ubicacion.estado && { Estado: ubicacion.estado }),
       ...(ubicacion.categoria && { Categoria: ubicacion.categoria }),
       ...(ubicacion.vigencia !== undefined && { Vigencia: ubicacion.vigencia }),
+      ...(ubicacion.permiso && { Permiso: ubicacion.permiso }),
       ...(ubicacion.urlImagenes && { URL_Imagenes: JSON.stringify(ubicacion.urlImagenes.map(url => ({ url, title: url.split('/').pop(), mimetype: 'image/jpeg', size: 0 }))) }),
       ...(ubicacion.urlFoto360 && { URL_Foto_360: JSON.stringify([{ url: ubicacion.urlFoto360, title: ubicacion.urlFoto360.split('/').pop(), mimetype: 'image/jpeg', size: 0 }]) }),
       ...(ubicacion.notas !== undefined && { Notas: ubicacion.notas }),

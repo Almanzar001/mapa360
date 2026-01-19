@@ -13,10 +13,10 @@ const AdminPage: React.FC = () => {
     nombre: '',
     ubicacion: '',
     fechaEmision: '',
-    fechaFinalizacion: '',
     estado: 'Activo',
     categoria: 'Permiso',
     vigencia: 365, // Default 1 año
+    permiso: 'Tiene', // Default Tiene permiso
     imagenesConvencionales: [],
     imagen360: null,
     notas: '',
@@ -246,9 +246,15 @@ const AdminPage: React.FC = () => {
 
     try {
       // Validaciones
-      if (!formulario.nombre || !formulario.ubicacion || 
-          !formulario.fechaEmision || !formulario.fechaFinalizacion) {
+      if (!formulario.nombre || !formulario.ubicacion) {
         throw new Error('Por favor completa todos los campos requeridos');
+      }
+
+      // Validar campos específicos si tiene permiso
+      if (formulario.permiso === 'Tiene') {
+        if (!formulario.fechaEmision || !formulario.vigencia) {
+          throw new Error('Fecha de emisión y vigencia son requeridas cuando tiene permiso');
+        }
       }
 
       // Validar formato de ubicación
@@ -309,12 +315,16 @@ const AdminPage: React.FC = () => {
       const formData = new FormData();
       formData.append('nombre', formulario.nombre);
       formData.append('ubicacion', formulario.ubicacion);
-      formData.append('fechaEmision', formulario.fechaEmision);
-      formData.append('fechaFinalizacion', formulario.fechaFinalizacion);
       formData.append('estado', formulario.estado);
       formData.append('categoria', formulario.categoria);
-      formData.append('vigencia', formulario.vigencia.toString());
+      formData.append('permiso', formulario.permiso);
       formData.append('notas', formulario.notas);
+
+      // Solo agregar fechaEmision y vigencia si tiene permiso
+      if (formulario.permiso === 'Tiene') {
+        formData.append('fechaEmision', formulario.fechaEmision);
+        formData.append('vigencia', formulario.vigencia.toString());
+      }
 
       // Agregar imágenes convencionales
       formulario.imagenesConvencionales.forEach((imagen, index) => {
@@ -346,16 +356,16 @@ const AdminPage: React.FC = () => {
 
       setLoadingMessage('');
       setMensaje({ tipo: 'success', texto: '¡Ubicación agregada exitosamente!' });
-      
+
       // Limpiar formulario
       setFormulario({
         nombre: '',
         ubicacion: '',
         fechaEmision: '',
-        fechaFinalizacion: '',
         estado: 'Activo',
         categoria: 'Permiso',
         vigencia: 365,
+        permiso: 'Tiene',
         imagenesConvencionales: [],
         imagen360: null,
         notas: '',
@@ -477,56 +487,6 @@ const AdminPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Fecha de Emisión *
-                </label>
-                <input
-                  type="date"
-                  name="fechaEmision"
-                  value={formulario.fechaEmision}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  Fecha de Finalización *
-                </label>
-                <input
-                  type="date"
-                  name="fechaFinalizacion"
-                  value={formulario.fechaFinalizacion}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ⏱️ Vigencia (Días) *
-                </label>
-                <input
-                  type="number"
-                  name="vigencia"
-                  value={formulario.vigencia}
-                  onChange={handleInputChange}
-                  min="1"
-                  max="3650"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="365"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Número de días de vigencia desde la fecha de emisión
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Tag className="w-4 h-4 inline mr-1" />
                   Categoría *
                 </label>
@@ -542,6 +502,62 @@ const AdminPage: React.FC = () => {
                   <option value="Hormigonera">{obtenerNombreCategoria('Hormigonera')}</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📋 ¿Tiene Permiso? *
+                </label>
+                <select
+                  name="permiso"
+                  value={formulario.permiso}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="Tiene">Tiene Permiso</option>
+                  <option value="No Tiene">No Tiene Permiso</option>
+                </select>
+              </div>
+
+              {/* Campos condicionales: solo mostrar si tiene permiso */}
+              {formulario.permiso === 'Tiene' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Calendar className="w-4 h-4 inline mr-1" />
+                      Fecha de Emisión *
+                    </label>
+                    <input
+                      type="date"
+                      name="fechaEmision"
+                      value={formulario.fechaEmision}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required={formulario.permiso === 'Tiene'}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ⏱️ Vigencia (Días) *
+                    </label>
+                    <input
+                      type="number"
+                      name="vigencia"
+                      value={formulario.vigencia}
+                      onChange={handleInputChange}
+                      min="1"
+                      max="3650"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="365"
+                      required={formulario.permiso === 'Tiene'}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Número de días de vigencia desde la fecha de emisión
+                    </p>
+                  </div>
+                </>
+              )}
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

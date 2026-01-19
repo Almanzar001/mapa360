@@ -248,7 +248,11 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       
       // Determinar color del marcador basado en vigencia y estado
       let iconColor, borderColor;
-      if (ubicacion.estado === 'Inactivo') {
+      // Si no tiene permiso, usar naranja brillante independientemente del estado
+      if (ubicacion.permiso === 'No Tiene') {
+        iconColor = '#FF8C00'; // Naranja brillante para sin permiso
+        borderColor = '#FF6600';
+      } else if (ubicacion.estado === 'Inactivo') {
         iconColor = '#EF4444'; // Rojo para inactivo
         borderColor = '#DC2626';
       } else if (infoVigencia.estaVencido) {
@@ -264,7 +268,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
       // Crear icono SVG personalizado según categoría
       const icon = {
-        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(obtenerIconoPorCategoria(ubicacion.categoria, iconColor, borderColor))}`,
+        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(obtenerIconoPorCategoria(ubicacion.categoria, iconColor, borderColor, ubicacion.permiso))}`,
         scaledSize: new window.google.maps.Size(40, 40),
         anchor: new window.google.maps.Point(20, 20),
       };
