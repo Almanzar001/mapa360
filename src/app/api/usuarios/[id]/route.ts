@@ -55,7 +55,7 @@ export async function PUT(
     }
 
     // Validar rol si se está actualizando
-    if (rol && !['SuperAdmin', 'Admin', 'Editor', 'Viewer', 'Add'].includes(rol)) {
+    if (rol && !['SuperAdmin', 'Admin', 'Editor', 'Viewer', 'add'].includes(rol)) {
       return NextResponse.json(
         { error: 'Rol inválido' },
         { status: 400 }

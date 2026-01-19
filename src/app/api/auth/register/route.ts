@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar rol - SuperAdmin no puede crear otro SuperAdmin
-    if (!['Admin', 'Editor', 'Viewer', 'Add'].includes(datosUsuario.rol)) {
+    if (!['Admin', 'Editor', 'Viewer', 'add'].includes(datosUsuario.rol)) {
       return NextResponse.json(
-        { error: 'Rol inválido. Solo se pueden crear usuarios: Admin, Editor, Viewer, Add' },
+        { error: 'Rol inválido. Solo se pueden crear usuarios: Admin, Editor, Viewer, add' },
         { status: 400 }
       );
     }
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const exito = await crearUsuario(datosUsuario);
     if (!exito) {
       return NextResponse.json(
-        { error: `Error al crear usuario. Verifica que:\n1. El email no exista ya\n2. El rol "${datosUsuario.rol}" esté configurado en NocoDB\n\nSi acabas de agregar el rol "Add" a la base de datos, asegúrate de agregarlo como opción en el campo "Rol" (tipo Select) en la configuración de la tabla de NocoDB.` },
+        { error: `Error al crear usuario. Verifica que:\n1. El email no exista ya\n2. El rol "${datosUsuario.rol}" esté configurado en NocoDB\n\nSi acabas de agregar el rol "add" a la base de datos, asegúrate de agregarlo como opción en el campo "Rol" (tipo Select) en la configuración de la tabla de NocoDB.` },
         { status: 400 }
       );
     }

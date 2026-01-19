@@ -24,8 +24,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       if (!usuario) {
         router.push(redirectTo);
       } else if (!rolesPermitidos.includes(usuario.rol)) {
-        // Redirigir a /admin si es rol Add, sino a /dashboard
-        const destino = usuario.rol === 'Add' ? '/admin' : '/dashboard';
+        // Redirigir a /admin si es rol add, sino a /dashboard
+        const destino = usuario.rol === 'add' ? '/admin' : '/dashboard';
         router.push(destino);
       }
     }
@@ -47,8 +47,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!rolesPermitidos.includes(usuario.rol)) {
-    const destino = usuario.rol === 'Add' ? '/admin' : '/dashboard';
-    const textoBoton = usuario.rol === 'Add' ? 'Ir a Agregar Ubicación' : 'Ir al Dashboard';
+    const destino = usuario.rol === 'add' ? '/admin' : '/dashboard';
+    const textoBoton = usuario.rol === 'add' ? 'Ir a Agregar Ubicación' : 'Ir al Dashboard';
 
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

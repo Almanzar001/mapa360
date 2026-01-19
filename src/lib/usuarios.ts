@@ -264,7 +264,7 @@ export function tienePermisoEscritura(rol: Rol): boolean {
 
 export function tienePermisoCrear(rol: Rol): boolean {
   // Add SOLO puede crear/agregar ubicaciones nuevas
-  return ['SuperAdmin', 'Admin', 'Editor', 'Add'].includes(rol);
+  return ['SuperAdmin', 'Admin', 'Editor', 'add'].includes(rol);
 }
 
 export function tienePermisoAdmin(rol: Rol): boolean {
@@ -280,5 +280,5 @@ export function esSuperAdmin(rol: Rol): boolean {
 }
 
 export function esSoloAgregar(rol: Rol): boolean {
-  return rol === 'Add'; // Usuario que solo puede agregar ubicaciones
+  return rol === 'add'; // Usuario que solo puede agregar ubicaciones
 }

@@ -27,13 +27,13 @@ export default function DashboardPage() {
   const [ubicacionAEditar, setUbicacionAEditar] = useState<Ubicacion | null>(null);
   const [centroMapa, setCentroMapa] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Redireccionar si no está autenticado o si es rol Add
+  // Redireccionar si no está autenticado o si es rol add
   useEffect(() => {
     if (!loading) {
       if (!usuario) {
         router.push('/login');
-      } else if (usuario.rol === 'Add') {
-        // Rol Add no tiene permiso de lectura, redirigir a agregar
+      } else if (usuario.rol === 'add') {
+        // Rol add no tiene permiso de lectura, redirigir a agregar
         router.push('/admin');
       }
     }

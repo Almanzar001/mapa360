@@ -5,7 +5,7 @@ import sharp from 'sharp';
 
 export async function POST(request: NextRequest) {
   // Verificar que solo SuperAdmin, Admin, Editor o Add puedan subir imágenes
-  const { permitido, response } = await verificarPermisos(request, ['SuperAdmin', 'Admin', 'Editor', 'Add']);
+  const { permitido, response } = await verificarPermisos(request, ['SuperAdmin', 'Admin', 'Editor', 'add']);
   if (!permitido) {
     return response;
   }

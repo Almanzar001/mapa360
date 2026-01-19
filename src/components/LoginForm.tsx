@@ -19,7 +19,7 @@ const LoginForm: React.FC = () => {
   // Redireccionar si ya está logueado
   useEffect(() => {
     if (usuario) {
-      const destino = usuario.rol === 'Add' ? '/admin' : '/dashboard';
+      const destino = usuario.rol === 'add' ? '/admin' : '/dashboard';
       router.push(destino);
     }
   }, [usuario, router]);

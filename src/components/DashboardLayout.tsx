@@ -17,7 +17,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const pathname = usePathname();
 
   // Navegación según el rol del usuario
-  const navigation = usuario?.rol === 'Add'
+  const navigation = usuario?.rol === 'add'
     ? [
         // Rol Add solo puede agregar ubicaciones
         { name: 'Agregar Ubicación', href: '/admin', icon: Settings },
