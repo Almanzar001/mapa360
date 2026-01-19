@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Calendar, MapPin, Image, Camera, Tag, Clock, Edit, Trash2 } from 'lucide-react';
+import { X, Calendar, MapPin, Image, Camera, Tag, Clock, Edit, Trash2, AlertCircle } from 'lucide-react';
 import { Ubicacion } from '@/types';
 import GaleriaImagenes from './GaleriaImagenes';
 import { obtenerNombreCategoria, obtenerColorCategoria } from '@/lib/iconos-categoria';
