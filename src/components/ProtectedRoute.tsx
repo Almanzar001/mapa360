@@ -24,7 +24,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       if (!usuario) {
         router.push(redirectTo);
       } else if (!rolesPermitidos.includes(usuario.rol)) {
-        router.push('/dashboard');
+        // Redirigir a /admin si es rol Add, sino a /dashboard
+        const destino = usuario.rol === 'Add' ? '/admin' : '/dashboard';
+        router.push(destino);
       }
     }
   }, [usuario, loading, router, rolesPermitidos, redirectTo]);
@@ -45,6 +47,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!rolesPermitidos.includes(usuario.rol)) {
+    const destino = usuario.rol === 'Add' ? '/admin' : '/dashboard';
+    const textoBoton = usuario.rol === 'Add' ? 'Ir a Agregar Ubicación' : 'Ir al Dashboard';
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -54,10 +59,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Acceso Denegado</h3>
           <p className="text-gray-600 mb-4">No tienes permisos para acceder a esta página.</p>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push(destino)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Ir al Dashboard
+            {textoBoton}
           </button>
         </div>
       </div>

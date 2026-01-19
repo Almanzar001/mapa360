@@ -250,11 +250,18 @@ export async function actualizarUsuario(id: string, datos: Partial<Usuario> & { 
 
 // Utilidades para verificar permisos
 export function tienePermisoLectura(rol: Rol): boolean {
+  // Add NO puede leer ubicaciones, solo agregar
   return ['SuperAdmin', 'Admin', 'Editor', 'Viewer'].includes(rol);
 }
 
 export function tienePermisoEscritura(rol: Rol): boolean {
+  // Add NO puede editar ubicaciones existentes
   return ['SuperAdmin', 'Admin', 'Editor'].includes(rol);
+}
+
+export function tienePermisoCrear(rol: Rol): boolean {
+  // Add SOLO puede crear/agregar ubicaciones nuevas
+  return ['SuperAdmin', 'Admin', 'Editor', 'Add'].includes(rol);
 }
 
 export function tienePermisoAdmin(rol: Rol): boolean {
@@ -267,4 +274,8 @@ export function puedeGestionarUsuarios(rol: Rol): boolean {
 
 export function esSuperAdmin(rol: Rol): boolean {
   return rol === 'SuperAdmin';
+}
+
+export function esSoloAgregar(rol: Rol): boolean {
+  return rol === 'Add'; // Usuario que solo puede agregar ubicaciones
 }

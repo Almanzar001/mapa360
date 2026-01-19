@@ -218,6 +218,7 @@ const GestionUsuarios: React.FC<GestionUsuariosProps> = ({ usuarioActual }) => {
       Admin: 'bg-red-100 text-red-800 border-red-200',
       Editor: 'bg-blue-100 text-blue-800 border-blue-200',
       Viewer: 'bg-gray-100 text-gray-800 border-gray-200',
+      Add: 'bg-green-100 text-green-800 border-green-200',
     };
 
     return (
@@ -349,6 +350,7 @@ const GestionUsuarios: React.FC<GestionUsuariosProps> = ({ usuarioActual }) => {
                   required
                 >
                   <option value="Viewer">Viewer</option>
+                  <option value="Add">Add (Solo Agregar)</option>
                   <option value="Editor">Editor</option>
                   <option value="Admin">Admin</option>
                 </select>
@@ -527,6 +529,7 @@ const GestionUsuarios: React.FC<GestionUsuariosProps> = ({ usuarioActual }) => {
                       required
                     >
                       <option value="Viewer">Viewer</option>
+                      <option value="Add">Add (Solo Agregar)</option>
                       <option value="Editor">Editor</option>
                       <option value="Admin">Admin</option>
                       <option value="SuperAdmin">SuperAdmin</option>

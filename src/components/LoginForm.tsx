@@ -19,7 +19,8 @@ const LoginForm: React.FC = () => {
   // Redireccionar si ya está logueado
   useEffect(() => {
     if (usuario) {
-      router.push('/dashboard');
+      const destino = usuario.rol === 'Add' ? '/admin' : '/dashboard';
+      router.push(destino);
     }
   }, [usuario, router]);
 
@@ -39,12 +40,11 @@ const LoginForm: React.FC = () => {
 
     try {
       const exito = await login(formData.email, formData.password);
-      
-      if (exito) {
-        router.push('/dashboard');
-      } else {
+
+      if (!exito) {
         setError('Credenciales incorrectas');
       }
+      // La redirección se maneja en el useEffect cuando cambia el usuario
     } catch (error) {
       setError('Error de conexión. Intenta nuevamente.');
     } finally {

@@ -3,7 +3,7 @@
 export type Categoria = 'Mina' | 'Hormigonera' | 'Permiso';
 
 // Tipos para sistema de usuarios y autenticación
-export type Rol = 'SuperAdmin' | 'Admin' | 'Editor' | 'Viewer';
+export type Rol = 'SuperAdmin' | 'Admin' | 'Editor' | 'Viewer' | 'Add';
 export type EstadoUsuario = 'Activo' | 'Inactivo';
 
 export interface Usuario {

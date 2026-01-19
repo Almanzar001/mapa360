@@ -16,11 +16,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const navigation = [
-    { name: 'Mapa Principal', href: '/dashboard', icon: MapPin },
-    { name: 'Administrar Ubicaciones', href: '/admin', icon: Settings, roles: ['SuperAdmin', 'Admin', 'Editor'] },
-    ...(puedeGestionarUsuarios() ? [{ name: 'Gestión de Usuarios', href: '/dashboard/usuarios', icon: Users, roles: ['SuperAdmin'] }] : []),
-  ];
+  // Navegación según el rol del usuario
+  const navigation = usuario?.rol === 'Add'
+    ? [
+        // Rol Add solo puede agregar ubicaciones
+        { name: 'Agregar Ubicación', href: '/admin', icon: Settings },
+      ]
+    : [
+        // Roles con permisos de lectura
+        { name: 'Mapa Principal', href: '/dashboard', icon: MapPin },
+        ...(usuario?.rol && ['SuperAdmin', 'Admin', 'Editor'].includes(usuario.rol)
+          ? [{ name: 'Administrar Ubicaciones', href: '/admin', icon: Settings }]
+          : []
+        ),
+        ...(puedeGestionarUsuarios() ? [{ name: 'Gestión de Usuarios', href: '/dashboard/usuarios', icon: Users }] : []),
+      ];
 
 
   const handleLogout = async () => {
@@ -32,6 +42,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     Admin: 'bg-red-100 text-red-800',
     Editor: 'bg-blue-100 text-blue-800',
     Viewer: 'bg-gray-100 text-gray-800',
+    Add: 'bg-green-100 text-green-800',
   };
 
   return (

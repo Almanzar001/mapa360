@@ -4,8 +4,8 @@ import { verificarPermisos } from '@/lib/middleware-auth';
 import sharp from 'sharp';
 
 export async function POST(request: NextRequest) {
-  // Verificar que solo SuperAdmin, Admin o Editor puedan subir imágenes
-  const { permitido, response } = await verificarPermisos(request, ['SuperAdmin', 'Admin', 'Editor']);
+  // Verificar que solo SuperAdmin, Admin, Editor o Add puedan subir imágenes
+  const { permitido, response } = await verificarPermisos(request, ['SuperAdmin', 'Admin', 'Editor', 'Add']);
   if (!permitido) {
     return response;
   }
