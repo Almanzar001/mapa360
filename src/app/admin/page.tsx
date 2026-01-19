@@ -379,7 +379,7 @@ const AdminPage: React.FC = () => {
   };
 
   return (
-    <ProtectedRoute rolesPermitidos={['SuperAdmin', 'Admin', 'Editor']}>
+    <ProtectedRoute rolesPermitidos={['SuperAdmin', 'Admin', 'Editor', 'add']}>
       <DashboardLayout>
         <div className="max-w-4xl mx-auto">
         {/* Header */}
