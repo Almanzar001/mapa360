@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { subirImagenANocoDB } from '@/lib/images';
+import { subirImagenANocoDB, validarImagen360 } from '@/lib/images';
 import { verificarPermisos } from '@/lib/middleware-auth';
+import sharp from 'sharp';
 
 export async function POST(request: NextRequest) {
   // Verificar que solo SuperAdmin, Admin o Editor puedan subir imágenes
@@ -12,10 +13,13 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    // Obtener todas las imágenes del FormData
+    // Obtener todas las imágenes convencionales del FormData
     const imagenes = formData.getAll('imagenes') as File[];
 
-    if (imagenes.length === 0) {
+    // Obtener imagen 360 si existe
+    const imagen360 = formData.get('imagen360') as File | null;
+
+    if (imagenes.length === 0 && !imagen360) {
       return NextResponse.json(
         { error: 'No se encontraron imágenes para subir' },
         { status: 400 }
@@ -23,8 +27,9 @@ export async function POST(request: NextRequest) {
     }
 
     const urls: string[] = [];
+    let url360 = '';
 
-    // Subir cada imagen
+    // Subir cada imagen convencional
     for (let i = 0; i < imagenes.length; i++) {
       const imagen = imagenes[i];
 
@@ -46,10 +51,43 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      mensaje: `${urls.length} imagen(es) subida(s) exitosamente`,
+    // Subir imagen 360° si existe
+    if (imagen360 && imagen360.size > 0) {
+      try {
+        const buffer = Buffer.from(await imagen360.arrayBuffer());
+
+        // Validar que sea imagen 360°
+        const metadata = await sharp(buffer).metadata();
+        if (!validarImagen360(metadata.width || 0, metadata.height || 0)) {
+          return NextResponse.json(
+            { error: 'La imagen 360° debe tener formato equirectangular (relación 2:1)' },
+            { status: 400 }
+          );
+        }
+
+        const fileName = `imagen_360_${Date.now()}.jpg`;
+        const resultado = await subirImagenANocoDB(buffer, fileName, true);
+        url360 = resultado.url;
+      } catch (imageError) {
+        console.error('Error al subir imagen 360°:', imageError);
+        return NextResponse.json(
+          { error: `Error al subir imagen 360°: ${imageError instanceof Error ? imageError.message : 'Error desconocido'}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const response: any = {
+      mensaje: `${urls.length} imagen(es) convencional(es) subida(s) exitosamente`,
       urls
-    });
+    };
+
+    if (url360) {
+      response.mensaje += ` y 1 imagen 360° subida`;
+      response.url360 = url360;
+    }
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Error en API upload-images:', error);

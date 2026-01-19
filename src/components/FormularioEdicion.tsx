@@ -39,7 +39,13 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
   const [nuevasImagenes, setNuevasImagenes] = useState<File[]>([]);
   const [previewNuevasImagenes, setPreviewNuevasImagenes] = useState<string[]>([]);
 
+  // Estados para gestión de imagen 360
+  const [imagen360Actual, setImagen360Actual] = useState<string>(ubicacion.urlFoto360 || '');
+  const [nuevaImagen360, setNuevaImagen360] = useState<File | null>(null);
+  const [previewNuevaImagen360, setPreviewNuevaImagen360] = useState<string>('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imagen360InputRef = useRef<HTMLInputElement>(null);
 
   // Actualizar formData cuando cambie la ubicación
   useEffect(() => {
@@ -56,6 +62,9 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
     setImagenesActuales(ubicacion.urlImagenes || []);
     setNuevasImagenes([]);
     setPreviewNuevasImagenes([]);
+    setImagen360Actual(ubicacion.urlFoto360 || '');
+    setNuevaImagen360(null);
+    setPreviewNuevaImagen360('');
   }, [ubicacion]);
 
   const handleInputChange = (
@@ -68,6 +77,50 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
     }));
   };
 
+  // Función para comprimir imagen 360° en el frontend
+  const compressImage360 = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Determinar tamaño objetivo manteniendo proporción 2:1
+        let targetWidth = img.width;
+        let targetHeight = img.height;
+
+        if (img.width > 4096) {
+          targetWidth = 4096;
+          targetHeight = 2048;
+        }
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        // Dibujar imagen redimensionada
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        }
+
+        // Convertir a blob con compresión
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            reject(new Error('Error al comprimir imagen'));
+          }
+        }, 'image/jpeg', 0.8); // 80% calidad
+      };
+
+      img.onerror = () => reject(new Error('Error al cargar imagen para compresión'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   // Función para comprimir imágenes convencionales
   const compressConventionalImage = (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
@@ -76,9 +129,11 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
       const img = new Image();
 
       img.onload = () => {
+        // Redimensionar manteniendo proporción pero limitando tamaño máximo
         let targetWidth = img.width;
         let targetHeight = img.height;
-        const maxDimension = 2048;
+
+        const maxDimension = 2048; // Tamaño máximo para imágenes convencionales
 
         if (img.width > maxDimension || img.height > maxDimension) {
           if (img.width > img.height) {
@@ -93,12 +148,14 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
         canvas.width = targetWidth;
         canvas.height = targetHeight;
 
+        // Dibujar imagen redimensionada con mejor calidad
         if (ctx) {
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
         }
 
+        // Convertir a blob con buena compresión
         canvas.toBlob((blob) => {
           if (blob) {
             const compressedFile = new File([blob], file.name, {
@@ -109,7 +166,7 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
           } else {
             reject(new Error('Error al comprimir imagen'));
           }
-        }, 'image/jpeg', 0.85);
+        }, 'image/jpeg', 0.85); // 85% calidad para buena visualización
       };
 
       img.onerror = () => reject(new Error('Error al cargar imagen para compresión'));
@@ -145,6 +202,56 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
     setPreviewNuevasImagenes(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Manejar eliminación de imagen 360 actual
+  const handleEliminarImagen360Actual = () => {
+    setImagen360Actual('');
+  };
+
+  // Manejar carga de nueva imagen 360
+  const handleNuevaImagen360Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar que sea una imagen
+      if (!file.type.startsWith('image/')) {
+        setMensaje({ tipo: 'error', texto: 'Por favor selecciona una imagen válida' });
+        return;
+      }
+
+      setNuevaImagen360(file);
+
+      // Crear preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewNuevaImagen360(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Validar dimensiones (opcional)
+      const img = new Image();
+      img.onload = () => {
+        const ratio = img.width / img.height;
+        if (Math.abs(ratio - 2) > 0.1) {
+          setMensaje({
+            tipo: 'error',
+            texto: 'La imagen 360° debe tener formato equirectangular (relación 2:1)'
+          });
+        } else {
+          setMensaje(null);
+        }
+      };
+      img.src = URL.createObjectURL(file);
+    }
+  };
+
+  // Manejar eliminación de nueva imagen 360 (antes de subir)
+  const handleEliminarNuevaImagen360 = () => {
+    setNuevaImagen360(null);
+    setPreviewNuevaImagen360('');
+    if (imagen360InputRef.current) {
+      imagen360InputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -168,19 +275,45 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
 
       // Array final de URLs de imágenes (empezar con las actuales que no se eliminaron)
       let urlImagenesFinales = [...imagenesActuales];
+      let urlFoto360Final = imagen360Actual;
 
-      // Si hay nuevas imágenes, subirlas
+      // Límites para compresión condicional
+      const maxSizeConvencional = 5 * 1024 * 1024; // 5MB límite antes de comprimir
+      const maxSize360 = 50 * 1024 * 1024; // 50MB límite absoluto
+      const compress360Threshold = 15 * 1024 * 1024; // 15MB para comprimir 360
+
+      // Si hay nuevas imágenes convencionales, procesarlas y subirlas
       if (nuevasImagenes.length > 0) {
-        setLoadingMessage(`Subiendo ${nuevasImagenes.length} imagen(es)...`);
+        setLoadingMessage('Optimizando imágenes...');
 
         const formDataUpload = new FormData();
+        const imagenesOptimizadas: File[] = [];
 
-        // Comprimir y agregar imágenes
+        // Comprimir solo si son muy grandes
         for (let i = 0; i < nuevasImagenes.length; i++) {
-          setLoadingMessage(`Comprimiendo imagen ${i + 1}/${nuevasImagenes.length}...`);
-          const compressedImage = await compressConventionalImage(nuevasImagenes[i]);
-          formDataUpload.append('imagenes', compressedImage);
+          const originalFile = nuevasImagenes[i];
+          const size = originalFile.size;
+          console.log(`Imagen ${i + 1}: ${(size / 1024 / 1024).toFixed(2)}MB`);
+
+          if (size > maxSizeConvencional) {
+            setLoadingMessage(`Comprimiendo imagen ${i + 1}/${nuevasImagenes.length} para mejor rendimiento...`);
+            try {
+              const compressedFile = await compressConventionalImage(originalFile);
+              imagenesOptimizadas.push(compressedFile);
+              console.log(`Imagen ${i + 1} comprimida: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+            } catch (error) {
+              console.error('Error al comprimir imagen:', error);
+              throw new Error(`Error al comprimir imagen ${i + 1}. Intenta con una imagen más pequeña.`);
+            }
+          } else {
+            imagenesOptimizadas.push(originalFile);
+          }
         }
+
+        // Agregar imágenes optimizadas al FormData
+        imagenesOptimizadas.forEach(img => {
+          formDataUpload.append('imagenes', img);
+        });
 
         setLoadingMessage('Subiendo imágenes al servidor...');
 
@@ -202,9 +335,57 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
         }
       }
 
+      // Si hay nueva imagen 360, procesarla y subirla
+      if (nuevaImagen360) {
+        const size = nuevaImagen360.size;
+        console.log(`Imagen 360°: ${(size / 1024 / 1024).toFixed(2)}MB`);
+
+        if (size > maxSize360) {
+          throw new Error(`Imagen 360° es muy grande (${(size / 1024 / 1024).toFixed(1)}MB). Máximo 50MB.`);
+        }
+
+        let imagen360Optimizada = nuevaImagen360;
+
+        // Comprimir si es mayor a 15MB
+        if (size > compress360Threshold) {
+          console.warn('⚠️ Imagen 360° grande detectada - comprimiendo...');
+          setLoadingMessage('Comprimiendo imagen 360° para optimizar carga...');
+
+          try {
+            const compressedFile = await compressImage360(nuevaImagen360);
+            imagen360Optimizada = compressedFile;
+            console.log(`Imagen 360° comprimida: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+          } catch (error) {
+            console.error('Error al comprimir imagen 360°:', error);
+            throw new Error('Error al comprimir imagen 360°. Intenta con una imagen más pequeña.');
+          }
+        }
+
+        setLoadingMessage('Subiendo imagen 360° al servidor...');
+
+        const formData360 = new FormData();
+        formData360.append('imagen360', imagen360Optimizada);
+
+        const upload360Response = await fetch('/api/ubicaciones/upload-images', {
+          method: 'POST',
+          body: formData360,
+        });
+
+        if (!upload360Response.ok) {
+          throw new Error('Error al subir la imagen 360°');
+        }
+
+        const upload360Data = await upload360Response.json();
+
+        // Actualizar URL de foto 360
+        if (upload360Data.url360) {
+          urlFoto360Final = upload360Data.url360;
+        }
+      }
+
       setLoadingMessage('Actualizando ubicación...');
 
-      // Enviar a API con el array completo de imágenes
+      // Enviar a API con el array completo de imágenes y la foto 360
       const response = await fetch(`/api/ubicaciones/${ubicacion.id}`, {
         method: 'PUT',
         headers: {
@@ -213,6 +394,7 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
         body: JSON.stringify({
           ...formData,
           urlImagenes: urlImagenesFinales,
+          urlFoto360: urlFoto360Final,
         }),
       });
 
@@ -228,6 +410,7 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
         ...ubicacion,
         ...formData,
         urlImagenes: urlImagenesFinales,
+        urlFoto360: urlFoto360Final,
       };
 
       // Notificar al componente padre
@@ -517,6 +700,89 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
                 </button>
                 <p className="text-xs text-gray-500 mt-2 text-center">
                   Total de imágenes: {imagenesActuales.length + nuevasImagenes.length}
+                </p>
+              </div>
+            </div>
+
+            {/* Gestión de Imagen 360° */}
+            <div className="mb-6 border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Camera className="w-5 h-5 mr-2 text-purple-600" />
+                Imagen 360°
+              </h3>
+
+              {/* Imagen 360 Actual */}
+              {imagen360Actual && !previewNuevaImagen360 && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Imagen 360° Actual
+                  </label>
+                  <div className="relative group max-w-md">
+                    <img
+                      src={imagen360Actual}
+                      alt="Imagen 360° actual"
+                      className="w-full h-32 object-cover rounded-lg border-2 border-purple-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleEliminarImagen360Actual}
+                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                      title="Eliminar imagen 360°"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Nueva Imagen 360 (Preview) */}
+              {previewNuevaImagen360 && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nueva Imagen 360° a Subir
+                  </label>
+                  <div className="relative group max-w-md">
+                    <img
+                      src={previewNuevaImagen360}
+                      alt="Nueva imagen 360°"
+                      className="w-full h-32 object-cover rounded-lg border-2 border-green-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleEliminarNuevaImagen360}
+                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                      title="Eliminar imagen 360°"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-green-500 text-white text-xs rounded">
+                      Nueva
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Botón para cambiar/agregar imagen 360 */}
+              <div>
+                <input
+                  ref={imagen360InputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleNuevaImagen360Change}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => imagen360InputRef.current?.click()}
+                  className="w-full px-4 py-3 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors flex items-center justify-center"
+                >
+                  <Camera className="w-5 h-5 mr-2 text-purple-600" />
+                  <span className="text-gray-700">
+                    {imagen360Actual || previewNuevaImagen360 ? 'Cambiar' : 'Agregar'} Imagen 360°
+                  </span>
+                </button>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Formato equirectangular (relación 2:1) • Máximo 50MB
                 </p>
               </div>
             </div>
