@@ -54,6 +54,14 @@ export async function PUT(
       );
     }
 
+    // Validar rol si se está actualizando
+    if (rol && !['SuperAdmin', 'Admin', 'Editor', 'Viewer', 'Add'].includes(rol)) {
+      return NextResponse.json(
+        { error: 'Rol inválido' },
+        { status: 400 }
+      );
+    }
+
     // Preparar datos para actualizar
     const datosActualizacion: any = {};
 

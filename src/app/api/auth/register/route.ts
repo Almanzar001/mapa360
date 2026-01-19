@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar rol - SuperAdmin no puede crear otro SuperAdmin
-    if (!['Admin', 'Editor', 'Viewer'].includes(datosUsuario.rol)) {
+    if (!['Admin', 'Editor', 'Viewer', 'Add'].includes(datosUsuario.rol)) {
       return NextResponse.json(
-        { error: 'Rol inválido. Solo se pueden crear usuarios: Admin, Editor, Viewer' },
+        { error: 'Rol inválido. Solo se pueden crear usuarios: Admin, Editor, Viewer, Add' },
         { status: 400 }
       );
     }
