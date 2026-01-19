@@ -31,10 +31,14 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
   
   if (!isOpen) return null;
   
-  // Calcular información de vigencia
-  const infoVigencia = calcularInfoVigencia(ubicacion.fechaEmision, ubicacion.vigencia);
-  const vigenciaFormateada = formatearVigencia(infoVigencia);
-  const fechaVencimiento = calcularFechaVencimiento(ubicacion.fechaEmision, ubicacion.vigencia);
+  // Calcular información de vigencia solo si tiene permiso
+  const infoVigencia = ubicacion.permiso === 'Tiene'
+    ? calcularInfoVigencia(ubicacion.fechaEmision, ubicacion.vigencia)
+    : null;
+  const vigenciaFormateada = infoVigencia ? formatearVigencia(infoVigencia) : null;
+  const fechaVencimiento = ubicacion.permiso === 'Tiene' && ubicacion.fechaEmision && ubicacion.vigencia
+    ? calcularFechaVencimiento(ubicacion.fechaEmision, ubicacion.vigencia)
+    : null;
 
   const formatDate = (dateString: string) => {
     try {
@@ -108,15 +112,32 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
 
           {/* Content */}
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-            
-            {/* Información de Vigencia - Destacada */}
-            <div className={`mb-6 p-4 rounded-lg border-2 ${
-              infoVigencia.estaVencido 
-                ? 'bg-red-50 border-red-200' 
-                : infoVigencia.estaCritico 
-                  ? 'bg-yellow-50 border-yellow-200'
-                  : 'bg-green-50 border-green-200'
-            }`}>
+
+            {/* Alerta de Sin Permiso */}
+            {ubicacion.permiso === 'No Tiene' && (
+              <div className="mb-6 p-4 rounded-lg border-2 bg-orange-50 border-orange-300">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <AlertCircle className="w-5 h-5 mr-2 text-orange-600" />
+                    Sin Permiso
+                  </h3>
+                  <span className="text-2xl">⚠️</span>
+                </div>
+                <p className="mt-2 text-orange-800 font-medium">
+                  Esta ubicación no cuenta con permiso vigente.
+                </p>
+              </div>
+            )}
+
+            {/* Información de Vigencia - Destacada (solo si tiene permiso) */}
+            {ubicacion.permiso === 'Tiene' && infoVigencia && (
+              <div className={`mb-6 p-4 rounded-lg border-2 ${
+                infoVigencia.estaVencido
+                  ? 'bg-red-50 border-red-200'
+                  : infoVigencia.estaCritico
+                    ? 'bg-yellow-50 border-yellow-200'
+                    : 'bg-green-50 border-green-200'
+              }`}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                   <Clock className="w-5 h-5 mr-2" />
@@ -127,48 +148,49 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
                 </span>
               </div>
               
-              <div className="space-y-3">
-                <p className={`text-xl font-bold ${vigenciaFormateada.color}`}>
-                  {vigenciaFormateada.texto}
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                  <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                    <div className="flex items-center mb-1">
-                      <Calendar className="w-4 h-4 mr-1 text-blue-600" />
-                      <span className="text-blue-700 font-medium block">Fecha de Emisión:</span>
+                <div className="space-y-3">
+                  <p className={`text-xl font-bold ${vigenciaFormateada?.color}`}>
+                    {vigenciaFormateada?.texto}
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                      <div className="flex items-center mb-1">
+                        <Calendar className="w-4 h-4 mr-1 text-blue-600" />
+                        <span className="text-blue-700 font-medium block">Fecha de Emisión:</span>
+                      </div>
+                      <span className="font-bold text-blue-900">{ubicacion.fechaEmision ? formatDate(ubicacion.fechaEmision) : 'N/A'}</span>
                     </div>
-                    <span className="font-bold text-blue-900">{formatDate(ubicacion.fechaEmision)}</span>
+                    <div className="bg-white p-3 rounded border">
+                      <span className="text-gray-600 block">Vigencia Total:</span>
+                      <span className="font-semibold">{ubicacion.vigencia || 0} días</span>
+                    </div>
+                    <div className="bg-white p-3 rounded border">
+                      <span className="text-gray-600 block">Días Transcurridos:</span>
+                      <span className="font-semibold">{infoVigencia?.diasTranscurridos || 0} días</span>
+                    </div>
                   </div>
+
                   <div className="bg-white p-3 rounded border">
-                    <span className="text-gray-600 block">Vigencia Total:</span>
-                    <span className="font-semibold">{ubicacion.vigencia} días</span>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-600">Progreso de Vigencia</span>
+                      <span className="font-semibold">{infoVigencia?.porcentajeTranscurrido.toFixed(1) || '0.0'}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className={`h-3 rounded-full transition-all duration-300 ${infoVigencia ? obtenerColorProgreso(infoVigencia) : 'bg-gray-300'}`}
+                        style={{ width: `${Math.min(100, infoVigencia?.porcentajeTranscurrido || 0)}%` }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="bg-white p-3 rounded border">
-                    <span className="text-gray-600 block">Días Transcurridos:</span>
-                    <span className="font-semibold">{infoVigencia.diasTranscurridos} días</span>
+
+                  <div className="bg-white p-2 rounded border text-center">
+                    <span className="text-gray-600 text-sm block">Fecha de Vencimiento:</span>
+                    <span className="font-semibold text-lg">{fechaVencimiento ? formatearFecha(fechaVencimiento) : 'N/A'}</span>
                   </div>
-                </div>
-                
-                <div className="bg-white p-3 rounded border">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Progreso de Vigencia</span>
-                    <span className="font-semibold">{infoVigencia.porcentajeTranscurrido.toFixed(1)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
-                      className={`h-3 rounded-full transition-all duration-300 ${obtenerColorProgreso(infoVigencia)}`}
-                      style={{ width: `${Math.min(100, infoVigencia.porcentajeTranscurrido)}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div className="bg-white p-2 rounded border text-center">
-                  <span className="text-gray-600 text-sm block">Fecha de Vencimiento:</span>
-                  <span className="font-semibold text-lg">{formatearFecha(fechaVencimiento)}</span>
                 </div>
               </div>
-            </div>
+            )}
             
             {/* Categoría y Estado */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
