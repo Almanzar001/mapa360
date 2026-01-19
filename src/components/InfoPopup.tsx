@@ -219,9 +219,11 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
             {/* Notas */}
             {ubicacion.notas && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notas</label>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-gray-700 text-sm">{ubicacion.notas}</p>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  📝 Notas Adicionales
+                </label>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <p className="text-gray-700 text-sm whitespace-pre-wrap">{ubicacion.notas}</p>
                 </div>
               </div>
             )}
