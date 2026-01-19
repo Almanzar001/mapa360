@@ -114,9 +114,12 @@ const GestionUsuarios: React.FC<GestionUsuariosProps> = ({ usuarioActual }) => {
         setShowFormulario(false);
         cargarUsuarios();
       } else {
+        // Mostrar el error específico del servidor
+        console.error('Error del servidor:', data);
         setMensaje({ tipo: 'error', texto: data.error || 'Error al crear usuario' });
       }
     } catch (error) {
+      console.error('Error de conexión:', error);
       setMensaje({ tipo: 'error', texto: 'Error de conexión' });
     } finally {
       setLoading(false);

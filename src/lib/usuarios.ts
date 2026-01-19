@@ -123,6 +123,8 @@ export async function crearUsuario(datosUsuario: UsuarioRegistro): Promise<boole
       FechaCreacion: new Date().toISOString(),
     };
 
+    console.log('Intentando crear usuario con datos:', { ...data, Password: '[OCULTO]' });
+
     const response = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_USUARIOS_TABLE_ID}/records`, {
       method: 'POST',
       headers,
@@ -131,7 +133,8 @@ export async function crearUsuario(datosUsuario: UsuarioRegistro): Promise<boole
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('NocoDB - Error al crear usuario:', errorText);
+      console.error('NocoDB - Error al crear usuario:', response.status, errorText);
+      console.error('Rol enviado:', datosUsuario.rol);
       return false;
     }
 

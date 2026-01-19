@@ -46,10 +46,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear usuario
+    console.log('Intentando crear usuario con rol:', datosUsuario.rol);
     const exito = await crearUsuario(datosUsuario);
     if (!exito) {
       return NextResponse.json(
-        { error: 'Error al crear usuario. Posiblemente el email ya existe.' },
+        { error: `Error al crear usuario. Verifica que:\n1. El email no exista ya\n2. El rol "${datosUsuario.rol}" esté configurado en NocoDB\n\nSi acabas de agregar el rol "Add" a la base de datos, asegúrate de agregarlo como opción en el campo "Rol" (tipo Select) en la configuración de la tabla de NocoDB.` },
         { status: 400 }
       );
     }
