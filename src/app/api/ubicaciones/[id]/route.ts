@@ -18,11 +18,28 @@ export async function PUT(
     const data = await request.json();
     
     // Validaciones
-    if (!data.nombre || !data.ubicacion || !data.fechaEmision || !data.fechaFinalizacion) {
+    if (!data.nombre || !data.ubicacion) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos' },
         { status: 400 }
       );
+    }
+
+    // Validar campos específicos si tiene permiso
+    if (data.permiso === 'Tiene') {
+      if (!data.fechaEmision || !data.vigencia) {
+        return NextResponse.json(
+          { error: 'Fecha de emisión y vigencia son requeridas cuando tiene permiso' },
+          { status: 400 }
+        );
+      }
+
+      if (data.vigencia < 1) {
+        return NextResponse.json(
+          { error: 'La vigencia debe ser al menos 1 día' },
+          { status: 400 }
+        );
+      }
     }
 
     // Validar formato de ubicación
@@ -33,26 +50,22 @@ export async function PUT(
       );
     }
 
-    // Validar vigencia
-    if (!data.vigencia || data.vigencia < 1) {
-      return NextResponse.json(
-        { error: 'La vigencia debe ser al menos 1 día' },
-        { status: 400 }
-      );
-    }
-
     // Preparar datos para actualización
     const ubicacionActualizada: any = {
       id,
       nombre: data.nombre,
       ubicacion: data.ubicacion,
-      fechaEmision: data.fechaEmision,
-      fechaFinalizacion: data.fechaFinalizacion,
       estado: data.estado as 'Activo' | 'Inactivo',
       categoria: data.categoria as 'Mina' | 'Hormigonera' | 'Permiso',
-      vigencia: parseInt(data.vigencia),
+      permiso: data.permiso as 'Tiene' | 'No Tiene',
       notas: data.notas || '',
     };
+
+    // Solo agregar fechaEmision y vigencia si tiene permiso
+    if (data.permiso === 'Tiene') {
+      ubicacionActualizada.fechaEmision = data.fechaEmision;
+      ubicacionActualizada.vigencia = parseInt(data.vigencia);
+    }
 
     // Incluir imágenes si se proporcionan
     if (data.urlImagenes !== undefined) {

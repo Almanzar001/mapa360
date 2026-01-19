@@ -12,7 +12,19 @@ export interface InfoVigencia {
 /**
  * Calcula información completa de vigencia basada en fecha de emisión y días de vigencia
  */
-export function calcularInfoVigencia(fechaEmision: string, vigenciaDias: number): InfoVigencia {
+export function calcularInfoVigencia(fechaEmision?: string, vigenciaDias?: number): InfoVigencia {
+  // Si no hay fecha de emisión o vigencia (porque no tiene permiso), devolver valores predeterminados
+  if (!fechaEmision || !vigenciaDias) {
+    return {
+      diasTranscurridos: 0,
+      diasRestantes: 0,
+      diasVencido: 0,
+      porcentajeTranscurrido: 0,
+      estaVencido: false,
+      estaCritico: false
+    };
+  }
+
   const hoy = new Date();
   const fechaEmisionDate = new Date(fechaEmision);
   const fechaVencimiento = new Date(fechaEmisionDate);

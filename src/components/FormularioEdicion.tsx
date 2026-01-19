@@ -22,11 +22,11 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
   const [formData, setFormData] = useState({
     nombre: ubicacion.nombre,
     ubicacion: ubicacion.ubicacion,
-    fechaEmision: ubicacion.fechaEmision,
-    fechaFinalizacion: ubicacion.fechaFinalizacion,
+    fechaEmision: ubicacion.fechaEmision || '',
     estado: ubicacion.estado,
     categoria: ubicacion.categoria,
-    vigencia: ubicacion.vigencia,
+    vigencia: ubicacion.vigencia || 365,
+    permiso: ubicacion.permiso || 'Tiene',
     notas: ubicacion.notas || '',
   });
 
@@ -52,11 +52,11 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
     setFormData({
       nombre: ubicacion.nombre,
       ubicacion: ubicacion.ubicacion,
-      fechaEmision: ubicacion.fechaEmision,
-      fechaFinalizacion: ubicacion.fechaFinalizacion,
+      fechaEmision: ubicacion.fechaEmision || '',
       estado: ubicacion.estado,
       categoria: ubicacion.categoria,
-      vigencia: ubicacion.vigencia,
+      vigencia: ubicacion.vigencia || 365,
+      permiso: ubicacion.permiso || 'Tiene',
       notas: ubicacion.notas || '',
     });
     setImagenesActuales(ubicacion.urlImagenes || []);
@@ -260,8 +260,15 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
 
     try {
       // Validaciones
-      if (!formData.nombre || !formData.ubicacion || !formData.fechaEmision || !formData.fechaFinalizacion) {
+      if (!formData.nombre || !formData.ubicacion) {
         throw new Error('Por favor completa todos los campos requeridos');
+      }
+
+      // Validar campos específicos si tiene permiso
+      if (formData.permiso === 'Tiene') {
+        if (!formData.fechaEmision || !formData.vigencia) {
+          throw new Error('Fecha de emisión y vigencia son requeridas cuando tiene permiso');
+        }
       }
 
       // Validar formato de ubicación
@@ -549,53 +556,59 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Calendar className="w-4 h-4 inline mr-1" />
-                    Fecha de Emisión *
+                    📋 ¿Tiene Permiso? *
                   </label>
-                  <input
-                    type="date"
-                    name="fechaEmision"
-                    value={formData.fechaEmision}
+                  <select
+                    name="permiso"
+                    value={formData.permiso}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
-                  />
+                  >
+                    <option value="Tiene">Tiene Permiso</option>
+                    <option value="No Tiene">No Tiene Permiso</option>
+                  </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Calendar className="w-4 h-4 inline mr-1" />
-                    Fecha de Finalización *
-                  </label>
-                  <input
-                    type="date"
-                    name="fechaFinalizacion"
-                    value={formData.fechaFinalizacion}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
+                {/* Campos condicionales: solo mostrar si tiene permiso */}
+                {formData.permiso === 'Tiene' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <Calendar className="w-4 h-4 inline mr-1" />
+                        Fecha de Emisión *
+                      </label>
+                      <input
+                        type="date"
+                        name="fechaEmision"
+                        value={formData.fechaEmision}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required={formData.permiso === 'Tiene'}
+                      />
+                    </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Clock className="w-4 h-4 inline mr-1" />
-                    Vigencia (Días) *
-                  </label>
-                  <input
-                    type="number"
-                    name="vigencia"
-                    value={formData.vigencia}
-                    onChange={handleInputChange}
-                    min="1"
-                    max="3650"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Número de días de vigencia desde la fecha de emisión
-                  </p>
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <Clock className="w-4 h-4 inline mr-1" />
+                        Vigencia (Días) *
+                      </label>
+                      <input
+                        type="number"
+                        name="vigencia"
+                        value={formData.vigencia}
+                        onChange={handleInputChange}
+                        min="1"
+                        max="3650"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required={formData.permiso === 'Tiene'}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Número de días de vigencia desde la fecha de emisión
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
