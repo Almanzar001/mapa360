@@ -2,7 +2,7 @@
 
 import React, { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { MapPin, User, LogOut, Users, Settings, Menu, X } from 'lucide-react';
+import { MapPin, User, LogOut, Users, Settings, Menu, X, Table } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -25,6 +25,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     : [
         // Roles con permisos de lectura
         { name: 'Mapa Principal', href: '/dashboard', icon: MapPin },
+        { name: 'Tabla de Ubicaciones', href: '/dashboard/ubicaciones', icon: Table },
         ...(usuario?.rol && ['SuperAdmin', 'Admin', 'Editor'].includes(usuario.rol)
           ? [{ name: 'Administrar Ubicaciones', href: '/admin', icon: Settings }]
           : []

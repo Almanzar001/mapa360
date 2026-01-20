@@ -144,26 +144,34 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     loadGoogleMaps();
   }, [centro]);
 
-  // Obtener ubicación del usuario
+  // Obtener y seguir ubicación del usuario en tiempo real
   useEffect(() => {
-    if (mostrarUbicacionUsuario && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUbicacionUsuario({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.log('Error obteniendo ubicación del usuario:', error);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // 5 minutos
-        }
-      );
-    }
+    if (!mostrarUbicacionUsuario || !navigator.geolocation) return;
+
+    // Usar watchPosition para seguimiento en tiempo real
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setUbicacionUsuario({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        console.log('Ubicación actualizada:', position.coords.latitude, position.coords.longitude);
+      },
+      (error) => {
+        console.log('Error obteniendo ubicación del usuario:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0 // Siempre obtener ubicación fresca
+      }
+    );
+
+    // Limpiar el watcher cuando el componente se desmonte o cambie la prop
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+      console.log('Detenido seguimiento de ubicación');
+    };
   }, [mostrarUbicacionUsuario]);
 
   // Crear marcador de ubicación del usuario
