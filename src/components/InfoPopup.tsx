@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Calendar, MapPin, Image, Camera, Tag, Clock, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { X, Calendar, MapPin, Image, Camera, Tag, Clock, Edit, Trash2, AlertCircle, Navigation } from 'lucide-react';
 import { Ubicacion } from '@/types';
 import GaleriaImagenes from './GaleriaImagenes';
 import { obtenerNombreCategoria, obtenerColorCategoria } from '@/lib/iconos-categoria';
@@ -53,9 +53,30 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
   };
 
   const getEstadoColor = (estado: string) => {
-    return estado === 'Activo' 
-      ? 'bg-green-100 text-green-800 border-green-200' 
+    return estado === 'Activo'
+      ? 'bg-green-100 text-green-800 border-green-200'
       : 'bg-red-100 text-red-800 border-red-200';
+  };
+
+  const abrirNavegacion = () => {
+    const lat = ubicacion.latitud;
+    const lng = ubicacion.longitud;
+
+    // Detectar si es iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    // URL para iOS (Apple Maps)
+    const iosUrl = `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+
+    // URL para Android/Otros (Google Maps)
+    const androidUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+    // Intentar abrir la app nativa, si falla abrir en navegador
+    if (isIOS) {
+      window.location.href = iosUrl;
+    } else {
+      window.open(androidUrl, '_blank');
+    }
   };
 
   return (
@@ -82,6 +103,13 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
               </div>
             </div>
             <div className="flex items-center space-x-2">
+              <button
+                onClick={abrirNavegacion}
+                className="p-2 hover:bg-green-100 rounded-full transition-colors group"
+                title="Navegar hacia esta ubicación"
+              >
+                <Navigation className="w-5 h-5 text-green-600 group-hover:text-green-700" />
+              </button>
               {onEdit && (
                 <button
                   onClick={() => onEdit(ubicacion)}
