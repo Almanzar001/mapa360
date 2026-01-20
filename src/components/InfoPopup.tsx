@@ -28,6 +28,7 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
 }) => {
   const [galeriaAbierta, setGaleriaAbierta] = useState(false);
   const [imagenInicialGaleria, setImagenInicialGaleria] = useState(0);
+  const [modalMapsAbierto, setModalMapsAbierto] = useState(false);
   
   if (!isOpen) return null;
   
@@ -59,24 +60,39 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
   };
 
   const abrirNavegacion = () => {
+    setModalMapsAbierto(true);
+  };
+
+  const abrirEnGoogleMaps = () => {
     const lat = ubicacion.latitud;
     const lng = ubicacion.longitud;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    window.open(url, '_blank');
+    setModalMapsAbierto(false);
+  };
 
-    // Detectar si es iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const abrirEnAppleMaps = () => {
+    const lat = ubicacion.latitud;
+    const lng = ubicacion.longitud;
+    const url = `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+    window.location.href = url;
+    setModalMapsAbierto(false);
+  };
 
-    // URL para iOS (Apple Maps)
-    const iosUrl = `maps://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+  const abrirEnWaze = () => {
+    const lat = ubicacion.latitud;
+    const lng = ubicacion.longitud;
+    const url = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+    window.open(url, '_blank');
+    setModalMapsAbierto(false);
+  };
 
-    // URL para Android/Otros (Google Maps)
-    const androidUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-
-    // Intentar abrir la app nativa, si falla abrir en navegador
-    if (isIOS) {
-      window.location.href = iosUrl;
-    } else {
-      window.open(androidUrl, '_blank');
-    }
+  const abrirEnMapasGenericos = () => {
+    const lat = ubicacion.latitud;
+    const lng = ubicacion.longitud;
+    const url = `geo:${lat},${lng}?q=${lat},${lng}`;
+    window.location.href = url;
+    setModalMapsAbierto(false);
   };
 
   return (
@@ -343,6 +359,95 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
         titulo={`${ubicacion.nombre} - Galería`}
         imagenInicial={imagenInicialGaleria}
       />
+
+      {/* Modal de Selección de Aplicación de Mapas */}
+      {modalMapsAbierto && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4"
+          onClick={() => setModalMapsAbierto(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+              Abrir en...
+            </h3>
+            <p className="text-sm text-gray-600 mb-6 text-center">
+              Selecciona la aplicación de mapas que prefieres usar
+            </p>
+
+            <div className="space-y-3">
+              {/* Google Maps */}
+              <button
+                onClick={abrirEnGoogleMaps}
+                className="w-full flex items-center p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group"
+              >
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4 group-hover:bg-blue-200">
+                  <span className="text-2xl">🗺️</span>
+                </div>
+                <div className="text-left flex-1">
+                  <h4 className="font-semibold text-gray-900 group-hover:text-blue-700">Google Maps</h4>
+                  <p className="text-xs text-gray-500">Abrir en Google Maps</p>
+                </div>
+                <Navigation className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
+              </button>
+
+              {/* Apple Maps */}
+              <button
+                onClick={abrirEnAppleMaps}
+                className="w-full flex items-center p-4 rounded-lg border-2 border-gray-200 hover:border-gray-500 hover:bg-gray-50 transition-all group"
+              >
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4 group-hover:bg-gray-200">
+                  <span className="text-2xl">🍎</span>
+                </div>
+                <div className="text-left flex-1">
+                  <h4 className="font-semibold text-gray-900 group-hover:text-gray-700">Apple Maps</h4>
+                  <p className="text-xs text-gray-500">Abrir en Apple Maps</p>
+                </div>
+                <Navigation className="w-5 h-5 text-gray-400 group-hover:text-gray-600" />
+              </button>
+
+              {/* Waze */}
+              <button
+                onClick={abrirEnWaze}
+                className="w-full flex items-center p-4 rounded-lg border-2 border-gray-200 hover:border-cyan-500 hover:bg-cyan-50 transition-all group"
+              >
+                <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center mr-4 group-hover:bg-cyan-200">
+                  <span className="text-2xl">🚗</span>
+                </div>
+                <div className="text-left flex-1">
+                  <h4 className="font-semibold text-gray-900 group-hover:text-cyan-700">Waze</h4>
+                  <p className="text-xs text-gray-500">Abrir en Waze</p>
+                </div>
+                <Navigation className="w-5 h-5 text-gray-400 group-hover:text-cyan-600" />
+              </button>
+
+              {/* Otros (geo:) */}
+              <button
+                onClick={abrirEnMapasGenericos}
+                className="w-full flex items-center p-4 rounded-lg border-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition-all group"
+              >
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4 group-hover:bg-green-200">
+                  <span className="text-2xl">📍</span>
+                </div>
+                <div className="text-left flex-1">
+                  <h4 className="font-semibold text-gray-900 group-hover:text-green-700">Otras Apps</h4>
+                  <p className="text-xs text-gray-500">Ver en otras aplicaciones</p>
+                </div>
+                <Navigation className="w-5 h-5 text-gray-400 group-hover:text-green-600" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setModalMapsAbierto(false)}
+              className="w-full mt-6 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
