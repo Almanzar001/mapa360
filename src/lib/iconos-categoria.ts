@@ -6,10 +6,10 @@ export function obtenerIconoPorCategoria(
   borderColor: string,
   tienePermiso?: TienePermiso
 ): string {
-  // Sobrescribir colores con naranja brillante si no tiene permiso
+  // Sobrescribir colores con negro si no tiene permiso
   if (tienePermiso === 'No Tiene') {
-    iconColor = '#FF8C00'; // Naranja brillante
-    borderColor = '#FF6600'; // Naranja más oscuro para el borde
+    iconColor = '#000000'; // Negro
+    borderColor = '#333333'; // Gris oscuro para el borde
   }
 
   // Símbolo de prohibición que se agregará si no tiene permiso
@@ -26,22 +26,31 @@ export function obtenerIconoPorCategoria(
           <!-- Círculo de fondo -->
           <circle cx="20" cy="20" r="18" fill="${iconColor}" stroke="${borderColor}" stroke-width="2"/>
 
-          <!-- Icono de mina -->
-          <g transform="translate(8, 8)">
-            <!-- Torre/estructura principal -->
-            <rect x="6" y="8" width="12" height="16" fill="white" stroke="${borderColor}" stroke-width="1"/>
-            <rect x="4" y="20" width="16" height="4" fill="white" stroke="${borderColor}" stroke-width="1"/>
+          <!-- Icono de retropala/excavadora -->
+          <g transform="translate(6, 10)">
+            <!-- Cabina central -->
+            <rect x="10" y="8" width="8" height="6" fill="white" stroke="${borderColor}" stroke-width="1" rx="1"/>
+            <rect x="11" y="9" width="6" height="2" fill="${borderColor}" opacity="0.3"/>
 
-            <!-- Detalles de la estructura -->
-            <rect x="8" y="10" width="2" height="12" fill="${borderColor}"/>
-            <rect x="12" y="10" width="2" height="12" fill="${borderColor}"/>
-            <rect x="6" y="12" width="12" height="1" fill="${borderColor}"/>
-            <rect x="6" y="16" width="12" height="1" fill="${borderColor}"/>
+            <!-- Pala delantera -->
+            <path d="M 4 14 L 10 12 L 10 14 L 4 16 Z" fill="white" stroke="${borderColor}" stroke-width="1"/>
+            <line x1="4" y1="15" x2="10" y2="13" stroke="${borderColor}" stroke-width="0.5"/>
 
-            <!-- Torre/grúa superior -->
-            <rect x="10" y="4" width="4" height="6" fill="white" stroke="${borderColor}" stroke-width="1"/>
-            <rect x="8" y="2" width="8" height="2" fill="${borderColor}"/>
-            <rect x="11" y="6" width="2" height="2" fill="${borderColor}"/>
+            <!-- Brazo excavador trasero -->
+            <path d="M 18 10 L 22 4 L 24 5 L 20 11 Z" fill="white" stroke="${borderColor}" stroke-width="1"/>
+            <circle cx="22" cy="4" r="1.5" fill="${borderColor}"/>
+
+            <!-- Cuchara excavadora -->
+            <path d="M 22 4 L 26 2 L 27 3 L 24 5 Z" fill="white" stroke="${borderColor}" stroke-width="1"/>
+
+            <!-- Ruedas -->
+            <circle cx="8" cy="14" r="2" fill="${borderColor}"/>
+            <circle cx="8" cy="14" r="1" fill="white"/>
+            <circle cx="15" cy="14" r="2" fill="${borderColor}"/>
+            <circle cx="15" cy="14" r="1" fill="white"/>
+
+            <!-- Base/chasis -->
+            <rect x="7" y="12" width="10" height="2" fill="white" stroke="${borderColor}" stroke-width="0.5"/>
           </g>
 
           ${simboloProhibicion}
@@ -54,22 +63,38 @@ export function obtenerIconoPorCategoria(
           <!-- Círculo de fondo -->
           <circle cx="20" cy="20" r="18" fill="${iconColor}" stroke="${borderColor}" stroke-width="2"/>
 
-          <!-- Icono de hormigonera/camión mezclador -->
-          <g transform="translate(6, 10)">
+          <!-- Icono de camión mezclador -->
+          <g transform="translate(5, 11)">
             <!-- Cabina del camión -->
-            <rect x="2" y="8" width="6" height="8" fill="white" stroke="${borderColor}" stroke-width="1"/>
-            <rect x="3" y="9" width="4" height="3" fill="${borderColor}"/>
+            <path d="M 2 10 L 2 6 L 7 6 L 8 10 Z" fill="white" stroke="${borderColor}" stroke-width="1"/>
+            <rect x="3" y="7" width="3" height="2" fill="${borderColor}" opacity="0.4"/>
 
-            <!-- Tambor mezclador -->
-            <ellipse cx="18" cy="12" rx="8" ry="6" fill="white" stroke="${borderColor}" stroke-width="1"/>
-            <ellipse cx="18" cy="12" rx="6" ry="4" fill="none" stroke="${borderColor}" stroke-width="1"/>
-            <line x1="12" y1="12" x2="24" y2="12" stroke="${borderColor}" stroke-width="1"/>
-            <line x1="18" y1="6" x2="18" y2="18" stroke="${borderColor}" stroke-width="1"/>
+            <!-- Detalles cabina -->
+            <rect x="2" y="8" width="6" height="1" fill="${borderColor}" opacity="0.2"/>
 
-            <!-- Ruedas -->
-            <circle cx="5" cy="16" r="2" fill="${borderColor}"/>
-            <circle cx="14" cy="16" r="2" fill="${borderColor}"/>
-            <circle cx="22" cy="16" r="2" fill="${borderColor}"/>
+            <!-- Tambor mezclador grande -->
+            <ellipse cx="18" cy="9" rx="9" ry="7" fill="white" stroke="${borderColor}" stroke-width="1.2"/>
+
+            <!-- Franjas del tambor -->
+            <path d="M 11 9 Q 14 6, 18 6 Q 22 6, 25 9" stroke="${borderColor}" stroke-width="1" fill="none"/>
+            <path d="M 11 9 Q 14 12, 18 12 Q 22 12, 25 9" stroke="${borderColor}" stroke-width="1" fill="none"/>
+            <ellipse cx="18" cy="9" rx="6" ry="4.5" fill="none" stroke="${borderColor}" stroke-width="0.8" opacity="0.5"/>
+
+            <!-- Boca del tambor -->
+            <ellipse cx="26" cy="9" rx="1.5" ry="2" fill="${borderColor}" opacity="0.3"/>
+
+            <!-- Chasis/base -->
+            <rect x="8" y="10" width="18" height="1.5" fill="white" stroke="${borderColor}" stroke-width="0.8"/>
+
+            <!-- Ruedas delanteras -->
+            <circle cx="5" cy="12" r="1.8" fill="${borderColor}"/>
+            <circle cx="5" cy="12" r="1" fill="white"/>
+
+            <!-- Ruedas traseras (dobles) -->
+            <circle cx="14" cy="12" r="1.8" fill="${borderColor}"/>
+            <circle cx="14" cy="12" r="1" fill="white"/>
+            <circle cx="22" cy="12" r="1.8" fill="${borderColor}"/>
+            <circle cx="22" cy="12" r="1" fill="white"/>
           </g>
 
           ${simboloProhibicion}
@@ -112,9 +137,9 @@ export function obtenerColorCategoria(
   categoria: Categoria,
   tienePermiso?: TienePermiso
 ): { icon: string; border: string } {
-  // Si no tiene permiso, devolver naranja brillante independientemente de la categoría
+  // Si no tiene permiso, devolver negro independientemente de la categoría
   if (tienePermiso === 'No Tiene') {
-    return { icon: '#FF8C00', border: '#FF6600' }; // Naranja brillante
+    return { icon: '#000000', border: '#333333' }; // Negro
   }
 
   switch (categoria) {

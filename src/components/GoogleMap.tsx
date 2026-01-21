@@ -256,10 +256,10 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       
       // Determinar color del marcador basado en vigencia y estado
       let iconColor, borderColor;
-      // Si no tiene permiso, usar naranja brillante independientemente del estado
+      // Si no tiene permiso, usar negro independientemente del estado
       if (ubicacion.permiso === 'No Tiene') {
-        iconColor = '#FF8C00'; // Naranja brillante para sin permiso
-        borderColor = '#FF6600';
+        iconColor = '#000000'; // Negro para sin permiso
+        borderColor = '#333333';
       } else if (ubicacion.estado === 'Inactivo') {
         iconColor = '#EF4444'; // Rojo para inactivo
         borderColor = '#DC2626';
