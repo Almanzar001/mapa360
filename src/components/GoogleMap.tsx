@@ -277,8 +277,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       // Crear icono SVG personalizado según categoría
       const icon = {
         url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(obtenerIconoPorCategoria(ubicacion.categoria, iconColor, borderColor, ubicacion.permiso))}`,
-        scaledSize: new window.google.maps.Size(40, 40),
-        anchor: new window.google.maps.Point(20, 20),
+        scaledSize: new window.google.maps.Size(32, 32),
+        anchor: new window.google.maps.Point(16, 16),
       };
 
       const marker = new window.google.maps.Marker({
