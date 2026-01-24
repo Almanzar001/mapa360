@@ -30,11 +30,18 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   mostrarUbicacionUsuario = true,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const onMarkerClickRef = useRef(onMarkerClick);
+  const initialViewSetRef = useRef<boolean>(false);
+  const markersRef = useRef<any[]>([]);
   const [map, setMap] = useState<any>(null);
-  const [markers, setMarkers] = useState<any[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
   const [ubicacionUsuario, setUbicacionUsuario] = useState<{ lat: number; lng: number } | null>(null);
   const [marcadorUsuario, setMarcadorUsuario] = useState<any>(null);
+
+  // Actualizar la referencia cuando cambie onMarkerClick
+  useEffect(() => {
+    onMarkerClickRef.current = onMarkerClick;
+  }, [onMarkerClick]);
 
   // Cargar Google Maps dinámicamente
   useEffect(() => {
@@ -57,6 +64,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
           streetViewControl: true,
           fullscreenControl: true,
           zoomControl: true,
+          rotateControl: true,
+          tilt: 45,
           gestureHandling: 'greedy',
         });
 
@@ -226,6 +235,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     });
 
     nuevoMarcadorUsuario.addListener('click', () => {
+      // Centrar y hacer zoom a la ubicación del usuario
+      map.setCenter(ubicacionUsuario);
+      map.setZoom(16);
       infoWindow.open(map, nuevoMarcadorUsuario);
     });
 
@@ -243,11 +255,12 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     if (!map) return;
 
     // Limpiar marcadores existentes
-    markers.forEach(marker => marker.setMap(null));
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
 
     // Filtrar ubicaciones por categoría
-    const ubicacionesFiltradas = filtroCategoria === 'Todas' 
-      ? ubicaciones 
+    const ubicacionesFiltradas = filtroCategoria === 'Todas'
+      ? ubicaciones
       : ubicaciones.filter(u => u.categoria === filtroCategoria);
     
     const newMarkers = ubicacionesFiltradas.map(ubicacion => {
@@ -291,7 +304,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
       // Agregar evento de click
       marker.addListener('click', () => {
-        onMarkerClick?.(ubicacion);
+        onMarkerClickRef.current?.(ubicacion);
       });
 
       // Determinar texto y color para el estado
@@ -341,22 +354,48 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       return marker;
     });
 
-    setMarkers(newMarkers);
+    markersRef.current = newMarkers;
 
-    // Ajustar vista para mostrar todos los marcadores si hay ubicaciones
-    if (ubicaciones.length > 0) {
-      const bounds = new window.google.maps.LatLngBounds();
-      ubicaciones.forEach(ubicacion => {
-        bounds.extend({ lat: ubicacion.latitud, lng: ubicacion.longitud });
-      });
-      map.fitBounds(bounds);
+    // Zoom inteligente: ajustar vista para mostrar todos los marcadores solo la primera vez
+    if (ubicacionesFiltradas.length > 0 && !initialViewSetRef.current) {
+      if (ubicacionesFiltradas.length > 1) {
+        // Calcular el centro de todas las ubicaciones
+        const latSum = ubicacionesFiltradas.reduce((sum, u) => sum + u.latitud, 0);
+        const lngSum = ubicacionesFiltradas.reduce((sum, u) => sum + u.longitud, 0);
+        const centro = {
+          lat: latSum / ubicacionesFiltradas.length,
+          lng: lngSum / ubicacionesFiltradas.length
+        };
 
-      // Si solo hay un marcador, establecer un zoom específico
-      if (ubicaciones.length === 1) {
+        // Calcular la distancia máxima desde el centro
+        let maxDistance = 0;
+        ubicacionesFiltradas.forEach(ubicacion => {
+          const distance = Math.sqrt(
+            Math.pow(ubicacion.latitud - centro.lat, 2) +
+            Math.pow(ubicacion.longitud - centro.lng, 2)
+          );
+          if (distance > maxDistance) maxDistance = distance;
+        });
+
+        // Establecer zoom basado en la distancia máxima
+        let zoomLevel;
+        if (maxDistance < 0.01) zoomLevel = 14;      // Muy cerca
+        else if (maxDistance < 0.05) zoomLevel = 12; // Cerca
+        else if (maxDistance < 0.1) zoomLevel = 11;  // Media distancia
+        else if (maxDistance < 0.5) zoomLevel = 10;  // Lejos
+        else zoomLevel = 9;                           // Muy lejos
+
+        map.setCenter(centro);
+        map.setZoom(zoomLevel);
+      } else {
+        // Si solo hay una ubicación, centrar con zoom específico
+        map.setCenter({ lat: ubicacionesFiltradas[0].latitud, lng: ubicacionesFiltradas[0].longitud });
         map.setZoom(15);
       }
+
+      initialViewSetRef.current = true;
     }
-  }, [map, ubicaciones, onMarkerClick]);
+  }, [map, ubicaciones, filtroCategoria]);
 
   return (
     <div className={`relative ${className}`}>
