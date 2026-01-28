@@ -13,7 +13,9 @@ const headers = {
 
 export async function obtenerUbicaciones(): Promise<Ubicacion[]> {
   try {
-    const response = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records`, {
+    // Agregar parámetro limit para obtener más de 25 registros (default de NocoDB)
+    // Usar un número alto (1000) para obtener todas las ubicaciones
+    const response = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${NOCODB_TABLE_ID}/records?limit=1000`, {
       headers,
     });
 
@@ -22,9 +24,9 @@ export async function obtenerUbicaciones(): Promise<Ubicacion[]> {
     }
 
     const data = await response.json();
-    
-    // console.log('NocoDB GET response:', data.list?.length || 0, 'registros');
-    
+
+    console.log('NocoDB GET response:', data.list?.length || 0, 'registros obtenidos');
+
     return data.list.map((row: any): Ubicacion => {
       // Parsear URLs de imágenes - NocoDB devuelve arrays directamente
       let urlImagenes: string[] = [];
