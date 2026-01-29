@@ -41,6 +41,7 @@ export interface Ubicacion {
   id: string;
   nombre: string;
   ubicacion: string;      // Formato: "latitud,longitud" ej: "18.626,-68.707"
+  codigo?: string;        // Código de la ubicación (opcional)
   fechaEmision?: string;  // Opcional si no tiene permiso
   estado: 'Activo' | 'Inactivo';
   categoria: Categoria;   // Nueva categoría
@@ -90,6 +91,7 @@ export interface Visor360Props {
 export interface FormularioAdmin {
   nombre: string;
   ubicacion: string;       // Campo unificado "latitud,longitud"
+  codigo: string;          // Código de la ubicación (opcional)
   fechaEmision: string;
   estado: 'Activo' | 'Inactivo';
   categoria: Categoria;    // Nueva categoría

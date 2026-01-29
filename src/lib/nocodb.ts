@@ -117,6 +117,7 @@ export async function obtenerUbicaciones(): Promise<Ubicacion[]> {
         id: row.Id?.toString() || '',
         nombre: row.Nombre || '',
         ubicacion,
+        codigo: row.Codigo || '',
         fechaEmision: row.Fecha_Emision || undefined,
         estado: (row.Estado as 'Activo' | 'Inactivo') || 'Inactivo',
         categoria: (row.Categoria as Categoria) || 'Permiso',
@@ -159,6 +160,7 @@ export async function agregarUbicacion(ubicacion: Omit<Ubicacion, 'id'>): Promis
     const data = {
       Nombre: ubicacion.nombre,
       Ubicacion: ubicacion.ubicacion, // Nuevo campo unificado
+      Codigo: ubicacion.codigo || '',
       Estado: ubicacion.estado,
       Categoria: ubicacion.categoria,
       Permiso: ubicacion.permiso,
@@ -198,6 +200,7 @@ export async function actualizarUbicacion(id: string, ubicacion: Partial<Ubicaci
       Id: parseInt(id), // ID debe ser entero
       ...(ubicacion.nombre && { Nombre: ubicacion.nombre }),
       ...(ubicacion.ubicacion && { Ubicacion: ubicacion.ubicacion }),
+      ...(ubicacion.codigo !== undefined && { Codigo: ubicacion.codigo }),
       ...(ubicacion.fechaEmision !== undefined && { Fecha_Emision: ubicacion.fechaEmision }),
       ...(ubicacion.estado && { Estado: ubicacion.estado }),
       ...(ubicacion.categoria && { Categoria: ubicacion.categoria }),

@@ -22,6 +22,7 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
   const [formData, setFormData] = useState({
     nombre: ubicacion.nombre,
     ubicacion: ubicacion.ubicacion,
+    codigo: ubicacion.codigo || '',
     fechaEmision: ubicacion.fechaEmision || '',
     estado: ubicacion.estado,
     categoria: ubicacion.categoria,
@@ -52,6 +53,7 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
     setFormData({
       nombre: ubicacion.nombre,
       ubicacion: ubicacion.ubicacion,
+      codigo: ubicacion.codigo || '',
       fechaEmision: ubicacion.fechaEmision || '',
       estado: ubicacion.estado,
       categoria: ubicacion.categoria,
@@ -517,6 +519,23 @@ const FormularioEdicion: React.FC<FormularioEdicionProps> = ({
                   />
                   <p className="text-gray-500 text-sm mt-1">
                     Formato: latitud,longitud (separados por coma)
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Código
+                  </label>
+                  <input
+                    type="text"
+                    name="codigo"
+                    value={formData.codigo}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Ej: MIN-001, HOR-123"
+                  />
+                  <p className="text-gray-500 text-sm mt-1">
+                    Código opcional para identificar la ubicación
                   </p>
                 </div>
 

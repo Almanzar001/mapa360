@@ -255,7 +255,16 @@ const InfoPopup: React.FC<InfoPopupProps> = ({
                     {ubicacion.estado}
                   </span>
                 </div>
-                
+
+                {ubicacion.codigo && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Código</label>
+                    <span className="inline-flex px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                      {ubicacion.codigo}
+                    </span>
+                  </div>
+                )}
+
               </div>
 
             </div>

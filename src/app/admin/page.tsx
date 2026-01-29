@@ -12,6 +12,7 @@ const AdminPage: React.FC = () => {
   const [formulario, setFormulario] = useState<FormularioAdmin>({
     nombre: '',
     ubicacion: '',
+    codigo: '',
     fechaEmision: '',
     estado: 'Activo',
     categoria: 'Permiso',
@@ -315,6 +316,7 @@ const AdminPage: React.FC = () => {
       const formData = new FormData();
       formData.append('nombre', formulario.nombre);
       formData.append('ubicacion', formulario.ubicacion);
+      formData.append('codigo', formulario.codigo);
       formData.append('estado', formulario.estado);
       formData.append('categoria', formulario.categoria);
       formData.append('permiso', formulario.permiso);
@@ -361,6 +363,7 @@ const AdminPage: React.FC = () => {
       setFormulario({
         nombre: '',
         ubicacion: '',
+        codigo: '',
         fechaEmision: '',
         estado: 'Activo',
         categoria: 'Permiso',
@@ -483,6 +486,23 @@ const AdminPage: React.FC = () => {
                   <MapPin className="w-4 h-4 mr-2" />
                   Usar mi ubicación actual
                 </button>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Código
+                </label>
+                <input
+                  type="text"
+                  name="codigo"
+                  value={formulario.codigo}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ej: MIN-001, HOR-123"
+                />
+                <p className="text-gray-500 text-sm mt-1">
+                  Código opcional para identificar la ubicación
+                </p>
               </div>
 
               <div>

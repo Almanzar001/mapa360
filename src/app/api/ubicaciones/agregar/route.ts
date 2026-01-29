@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     // Extraer datos del formulario
     const nombre = formData.get('nombre') as string;
     const ubicacion = formData.get('ubicacion') as string;
+    const codigo = formData.get('codigo') as string || '';
     const fechaEmision = formData.get('fechaEmision') as string || '';
     const estado = formData.get('estado') as 'Activo' | 'Inactivo';
     const categoria = formData.get('categoria') as 'Mina' | 'Hormigonera' | 'Permiso';
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
     console.log('Datos a guardar:', {
       nombre,
       ubicacion,
+      codigo,
       fechaEmision,
       estado,
       categoria,
@@ -126,6 +128,7 @@ export async function POST(request: NextRequest) {
     const ubicacionObj = crearUbicacion({
       nombre,
       ubicacion,
+      codigo,
       fechaEmision,
       estado,
       categoria,
