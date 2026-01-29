@@ -237,7 +237,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     nuevoMarcadorUsuario.addListener('click', () => {
       // Centrar y hacer zoom a la ubicación del usuario
       map.setCenter(ubicacionUsuario);
-      map.setZoom(16);
+      map.setZoom(17);
       infoWindow.open(map, nuevoMarcadorUsuario);
     });
 
@@ -356,55 +356,103 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
     markersRef.current = newMarkers;
 
-    // Zoom inteligente: ajustar vista para mostrar todos los marcadores solo la primera vez
-    if (ubicacionesFiltradas.length > 0 && !initialViewSetRef.current) {
-      if (ubicacionesFiltradas.length > 1) {
-        // Calcular el centro de todas las ubicaciones
-        const latSum = ubicacionesFiltradas.reduce((sum, u) => sum + u.latitud, 0);
-        const lngSum = ubicacionesFiltradas.reduce((sum, u) => sum + u.longitud, 0);
-        const centro = {
-          lat: latSum / ubicacionesFiltradas.length,
-          lng: lngSum / ubicacionesFiltradas.length
-        };
+    // Zoom inteligente: ajustar vista para mostrar todos los marcadores
+    // Se ejecuta la primera vez O cuando cambia el filtro de categoría
+    if (ubicacionesFiltradas.length > 0) {
+      const shouldAdjustZoom = !initialViewSetRef.current;
 
-        // Calcular la distancia máxima desde el centro
-        let maxDistance = 0;
-        ubicacionesFiltradas.forEach(ubicacion => {
-          const distance = Math.sqrt(
-            Math.pow(ubicacion.latitud - centro.lat, 2) +
-            Math.pow(ubicacion.longitud - centro.lng, 2)
-          );
-          if (distance > maxDistance) maxDistance = distance;
-        });
+      if (shouldAdjustZoom) {
+        if (ubicacionesFiltradas.length > 1) {
+          // Calcular el centro de todas las ubicaciones
+          const latSum = ubicacionesFiltradas.reduce((sum, u) => sum + u.latitud, 0);
+          const lngSum = ubicacionesFiltradas.reduce((sum, u) => sum + u.longitud, 0);
+          const centro = {
+            lat: latSum / ubicacionesFiltradas.length,
+            lng: lngSum / ubicacionesFiltradas.length
+          };
 
-        // Establecer zoom basado en la distancia máxima
-        let zoomLevel;
-        if (maxDistance < 0.01) zoomLevel = 14;      // Muy cerca
-        else if (maxDistance < 0.05) zoomLevel = 12; // Cerca
-        else if (maxDistance < 0.1) zoomLevel = 11;  // Media distancia
-        else if (maxDistance < 0.5) zoomLevel = 10;  // Lejos
-        else zoomLevel = 9;                           // Muy lejos
+          // Calcular la distancia máxima desde el centro
+          let maxDistance = 0;
+          ubicacionesFiltradas.forEach(ubicacion => {
+            const distance = Math.sqrt(
+              Math.pow(ubicacion.latitud - centro.lat, 2) +
+              Math.pow(ubicacion.longitud - centro.lng, 2)
+            );
+            if (distance > maxDistance) maxDistance = distance;
+          });
 
-        map.setCenter(centro);
-        map.setZoom(zoomLevel);
-      } else {
-        // Si solo hay una ubicación, centrar con zoom específico
-        map.setCenter({ lat: ubicacionesFiltradas[0].latitud, lng: ubicacionesFiltradas[0].longitud });
-        map.setZoom(15);
+          // Establecer zoom basado en la distancia máxima con niveles mejorados
+          let zoomLevel;
+          if (maxDistance < 0.005) zoomLevel = 15;     // Muy muy cerca (500m aprox)
+          else if (maxDistance < 0.01) zoomLevel = 14; // Muy cerca (1km aprox)
+          else if (maxDistance < 0.05) zoomLevel = 12; // Cerca (5km aprox)
+          else if (maxDistance < 0.1) zoomLevel = 11;  // Media distancia (10km aprox)
+          else if (maxDistance < 0.5) zoomLevel = 10;  // Lejos (50km aprox)
+          else if (maxDistance < 1.0) zoomLevel = 9;   // Muy lejos (100km aprox)
+          else zoomLevel = 8;                           // Extremadamente lejos
+
+          map.setCenter(centro);
+          map.setZoom(zoomLevel);
+        } else {
+          // Si solo hay una ubicación, centrar con zoom específico
+          map.setCenter({ lat: ubicacionesFiltradas[0].latitud, lng: ubicacionesFiltradas[0].longitud });
+          map.setZoom(15);
+        }
+
+        initialViewSetRef.current = true;
       }
-
-      initialViewSetRef.current = true;
     }
   }, [map, ubicaciones, filtroCategoria]);
 
+  // Función para centrar el mapa en la ubicación del usuario
+  const centrarEnUbicacionUsuario = () => {
+    if (map && ubicacionUsuario) {
+      map.setCenter(ubicacionUsuario);
+      map.setZoom(17);
+
+      // Abrir el info window del marcador de usuario si existe
+      if (marcadorUsuario) {
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: `
+            <div class="p-2 text-center">
+              <h3 class="font-semibold text-blue-600">📍 Tu ubicación</h3>
+              <p class="text-xs text-gray-600 mt-1">
+                ${ubicacionUsuario.lat.toFixed(6)}, ${ubicacionUsuario.lng.toFixed(6)}
+              </p>
+            </div>
+          `,
+        });
+        infoWindow.open(map, marcadorUsuario);
+      }
+    }
+  };
+
   return (
     <div className={`relative ${className}`}>
-      <div 
-        ref={mapRef} 
+      <div
+        ref={mapRef}
         className="w-full h-full rounded-lg shadow-lg"
         style={{ minHeight: '400px' }}
       />
-      
+
+      {/* Botón de Mi Ubicación */}
+      {mostrarUbicacionUsuario && ubicacionUsuario && (
+        <button
+          onClick={centrarEnUbicacionUsuario}
+          className="absolute top-4 right-4 bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-lg shadow-lg transition-all hover:shadow-xl z-10 flex items-center gap-2"
+          title="Centrar en mi ubicación"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 text-blue-600"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+          </svg>
+          <span className="hidden sm:inline font-medium">Mi Ubicación</span>
+        </button>
+      )}
 
       {/* Error indicator */}
       {mapError && (
