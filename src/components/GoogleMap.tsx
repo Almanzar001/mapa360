@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Ubicacion, Categoria } from '@/types';
 import { obtenerIconoPorCategoria, obtenerColorCategoria, obtenerNombreCategoria } from '@/lib/iconos-categoria';
 import { calcularInfoVigencia, formatearVigencia } from '@/lib/vigencia-utils';
@@ -21,18 +21,24 @@ interface GoogleMapProps {
   mostrarUbicacionUsuario?: boolean;
 }
 
-const GoogleMap: React.FC<GoogleMapProps> = ({
+export interface GoogleMapRef {
+  centrarEnUbicacionUsuario: () => void;
+  tieneUbicacionUsuario: () => boolean;
+}
+
+const GoogleMap = forwardRef<GoogleMapRef, GoogleMapProps>(({
   ubicaciones,
   onMarkerClick,
   centro = { lat: 18.626560805395105, lng: -68.70765075761358 }, // Centro en la ubicación existente
   className = 'w-full h-96',
   filtroCategoria = 'Todas',
   mostrarUbicacionUsuario = true,
-}) => {
+}, ref) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const onMarkerClickRef = useRef(onMarkerClick);
   const initialViewSetRef = useRef<boolean>(false);
   const markersRef = useRef<any[]>([]);
+  const centroInicialRef = useRef(centro); // Guardar el centro inicial
   const [map, setMap] = useState<any>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [ubicacionUsuario, setUbicacionUsuario] = useState<{ lat: number; lng: number } | null>(null);
@@ -43,11 +49,11 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     onMarkerClickRef.current = onMarkerClick;
   }, [onMarkerClick]);
 
-  // Cargar Google Maps dinámicamente
+  // Cargar Google Maps dinámicamente (solo una vez)
   useEffect(() => {
     const initMap = () => {
       if (!mapRef.current) return;
-      
+
       // Verificar que Google Maps esté completamente disponible
       if (!window.google || !window.google.maps || !window.google.maps.Map) {
         console.log('Google Maps not ready yet, retrying...');
@@ -57,7 +63,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
       try {
         const googleMap = new window.google.maps.Map(mapRef.current, {
-          center: centro,
+          center: centroInicialRef.current,
           zoom: 8,
           mapTypeId: 'roadmap',
           mapTypeControl: true,
@@ -151,7 +157,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     };
 
     loadGoogleMaps();
-  }, [centro]);
+  }, []); // Sin dependencias - solo se ejecuta una vez
 
   // Obtener y seguir ubicación del usuario en tiempo real
   useEffect(() => {
@@ -427,6 +433,12 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     }
   };
 
+  // Exponer funciones al componente padre mediante ref
+  useImperativeHandle(ref, () => ({
+    centrarEnUbicacionUsuario,
+    tieneUbicacionUsuario: () => !!ubicacionUsuario,
+  }), [map, ubicacionUsuario, marcadorUsuario]);
+
   return (
     <div className={`relative ${className}`}>
       <div
@@ -434,25 +446,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         className="w-full h-full rounded-lg shadow-lg"
         style={{ minHeight: '400px' }}
       />
-
-      {/* Botón de Mi Ubicación */}
-      {mostrarUbicacionUsuario && ubicacionUsuario && (
-        <button
-          onClick={centrarEnUbicacionUsuario}
-          className="absolute top-4 right-4 bg-white hover:bg-gray-50 text-gray-700 p-3 rounded-lg shadow-lg transition-all hover:shadow-xl z-10 flex items-center gap-2"
-          title="Centrar en mi ubicación"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 text-blue-600"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-            <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
-          </svg>
-          <span className="hidden sm:inline font-medium">Mi Ubicación</span>
-        </button>
-      )}
 
       {/* Error indicator */}
       {mapError && (
@@ -483,6 +476,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       )}
     </div>
   );
-};
+});
+
+GoogleMap.displayName = 'GoogleMap';
 
 export default GoogleMap;

@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import GoogleMap from '@/components/GoogleMap';
+import GoogleMap, { GoogleMapRef } from '@/components/GoogleMap';
 import InfoPopup from '@/components/InfoPopup';
 import Visor360 from '@/components/Visor360';
 import FormularioEdicion from '@/components/FormularioEdicion';
 import { Ubicacion, Categoria } from '@/types';
-import { MapPin, Plus, BarChart3, AlertCircle, Navigation } from 'lucide-react';
+import { MapPin, Plus, BarChart3, AlertCircle } from 'lucide-react';
 
 export default function DashboardPage() {
   const { usuario, loading } = useAuth();
@@ -26,6 +26,8 @@ export default function DashboardPage() {
   const [showFormularioEdicion, setShowFormularioEdicion] = useState(false);
   const [ubicacionAEditar, setUbicacionAEditar] = useState<Ubicacion | null>(null);
   const [centroMapa, setCentroMapa] = useState<{ lat: number; lng: number } | null>(null);
+  const [tieneUbicacionUsuario, setTieneUbicacionUsuario] = useState(false);
+  const googleMapRef = useRef<GoogleMapRef>(null);
 
   // Redireccionar si no está autenticado o si es rol add
   useEffect(() => {
@@ -150,29 +152,23 @@ export default function DashboardPage() {
     }
   };
 
-  const centrarEnMiUbicacion = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCentroMapa({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('Error obteniendo ubicación:', error);
-          alert('No se pudo obtener tu ubicación. Verifica los permisos de ubicación.');
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000
-        }
-      );
-    } else {
-      alert('Tu navegador no soporta geolocalización');
-    }
+  const handleCentrarEnMiUbicacion = () => {
+    googleMapRef.current?.centrarEnUbicacionUsuario();
   };
+
+  // Verificar periódicamente si hay ubicación del usuario disponible
+  useEffect(() => {
+    const checkUbicacion = () => {
+      const tiene = googleMapRef.current?.tieneUbicacionUsuario() ?? false;
+      setTieneUbicacionUsuario(tiene);
+    };
+
+    // Verificar inmediatamente y luego cada segundo
+    checkUbicacion();
+    const interval = setInterval(checkUbicacion, 1000);
+
+    return () => clearInterval(interval);
+  }, [loadingData]);
 
   if (loading) {
     return (
@@ -238,13 +234,22 @@ export default function DashboardPage() {
           </div>
 
           {/* Mi Ubicación Button */}
-          <button
-            onClick={centrarEnMiUbicacion}
-            className="w-12 h-12 bg-white rounded-full shadow-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-            title="Centrar en mi ubicación"
-          >
-            <Navigation className="w-5 h-5 text-gray-600" />
-          </button>
+          {tieneUbicacionUsuario && (
+            <button
+              onClick={handleCentrarEnMiUbicacion}
+              className="w-12 h-12 bg-white rounded-full shadow-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              title="Centrar en mi ubicación"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-blue-600"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+              </svg>
+            </button>
+          )}
 
           {/* Refresh Button */}
           <button
@@ -284,12 +289,13 @@ export default function DashboardPage() {
             </div>
           ) : (
             <GoogleMap
+              ref={googleMapRef}
               ubicaciones={ubicaciones}
               onMarkerClick={handleMarkerClick}
               centro={
-                centroMapa || 
-                (ubicaciones.length > 0 ? 
-                  { lat: ubicaciones[0].latitud, lng: ubicaciones[0].longitud } : 
+                centroMapa ||
+                (ubicaciones.length > 0 ?
+                  { lat: ubicaciones[0].latitud, lng: ubicaciones[0].longitud } :
                   { lat: 18.626560805395105, lng: -68.70765075761358 }
                 )
               }
