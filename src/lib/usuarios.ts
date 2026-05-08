@@ -1,11 +1,9 @@
-import { Usuario, UsuarioRegistro, Rol, EstadoUsuario } from '@/types';
-import bcrypt from 'bcryptjs';
+import { Usuario, Rol, EstadoUsuario } from '@/types';
 import { dbQuery, dbInsert, dbUpdate } from './insforge';
 
 interface UsuarioRow {
   id: string;
   email: string;
-  password: string;
   nombre: string;
   rol: Rol;
   estado: EstadoUsuario;
@@ -55,20 +53,18 @@ export async function obtenerUsuarioPorId(id: string): Promise<Usuario | null> {
   }
 }
 
-export async function crearUsuario(datosUsuario: UsuarioRegistro): Promise<boolean> {
+export async function crearUsuario(datos: { email: string; nombre: string; rol: Rol; insforge_id?: string }): Promise<boolean> {
   try {
-    const existente = await obtenerUsuarioPorEmail(datosUsuario.email);
+    const existente = await obtenerUsuarioPorEmail(datos.email);
     if (existente) throw new Error('Ya existe un usuario con este email');
 
-    const passwordHash = await bcrypt.hash(datosUsuario.password, 12);
-
     await dbInsert('usuarios', {
-      email: datosUsuario.email,
-      password: passwordHash,
-      nombre: datosUsuario.nombre,
-      rol: datosUsuario.rol,
+      email: datos.email,
+      nombre: datos.nombre,
+      rol: datos.rol,
       estado: 'Activo',
       fecha_creacion: new Date().toISOString(),
+      insforge_id: datos.insforge_id ?? null,
     });
     return true;
   } catch (error) {
@@ -87,23 +83,6 @@ export async function actualizarUltimoAcceso(id: string): Promise<boolean> {
   }
 }
 
-export async function validarCredenciales(email: string, password: string): Promise<Usuario | null> {
-  try {
-    const rows = await dbQuery<UsuarioRow>('usuarios', { 'email': `eq.${email}`, limit: 1 });
-    if (rows.length === 0) return null;
-
-    const row = rows[0];
-    const passwordValida = await bcrypt.compare(password, row.password);
-    if (!passwordValida) return null;
-    if (row.estado !== 'Activo') return null;
-
-    await actualizarUltimoAcceso(row.id);
-    return rowToUsuario({ ...row, ultimo_acceso: new Date().toISOString() });
-  } catch (error) {
-    console.error('Error al validar credenciales:', error);
-    return null;
-  }
-}
 
 export async function actualizarUsuario(id: string, datos: Partial<Usuario> & { password?: string }): Promise<boolean> {
   try {

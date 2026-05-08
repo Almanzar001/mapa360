@@ -1,68 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { crearUsuario } from '@/lib/usuarios';
-import { UsuarioRegistro } from '@/types';
+import { insforgeSignUp } from '@/lib/insforge-auth';
+import { dbInsert, dbQuery } from '@/lib/insforge';
 import { verificarPermisos } from '@/lib/middleware-auth';
+import { Rol } from '@/types';
 
 export async function POST(request: NextRequest) {
-  // Verificar que solo SuperAdmin pueda crear usuarios
   const { permitido, response } = await verificarPermisos(request, ['SuperAdmin']);
-  if (!permitido) {
-    return response;
-  }
+  if (!permitido) return response!;
+
   try {
-    const datosUsuario: UsuarioRegistro = await request.json();
+    const { email, password, nombre, rol } = await request.json();
 
-    // Validaciones básicas
-    if (!datosUsuario.email || !datosUsuario.password || !datosUsuario.nombre) {
-      return NextResponse.json(
-        { error: 'Email, contraseña y nombre son requeridos' },
-        { status: 400 }
-      );
+    if (!email || !password || !nombre) {
+      return NextResponse.json({ error: 'Email, contraseña y nombre son requeridos' }, { status: 400 });
     }
 
-    // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(datosUsuario.email)) {
-      return NextResponse.json(
-        { error: 'Formato de email inválido' },
-        { status: 400 }
-      );
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: 'Formato de email inválido' }, { status: 400 });
     }
 
-    // Validar longitud de contraseña
-    if (datosUsuario.password.length < 6) {
-      return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 6 caracteres' },
-        { status: 400 }
-      );
+    if (password.length < 6) {
+      return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres' }, { status: 400 });
     }
 
-    // Validar rol - SuperAdmin no puede crear otro SuperAdmin
-    if (!['Admin', 'Editor', 'Viewer', 'add'].includes(datosUsuario.rol)) {
-      return NextResponse.json(
-        { error: 'Rol inválido. Solo se pueden crear usuarios: Admin, Editor, Viewer, add' },
-        { status: 400 }
-      );
+    const rolesValidos: Rol[] = ['Admin', 'Editor', 'Viewer', 'add'];
+    if (!rolesValidos.includes(rol)) {
+      return NextResponse.json({ error: 'Rol inválido. Roles permitidos: Admin, Editor, Viewer, add' }, { status: 400 });
     }
 
-    // Crear usuario
-    console.log('Intentando crear usuario con rol:', datosUsuario.rol);
-    const exito = await crearUsuario(datosUsuario);
-    if (!exito) {
-      return NextResponse.json(
-        { error: `Error al crear usuario. Verifica que:\n1. El email no exista ya\n2. El rol "${datosUsuario.rol}" esté configurado en NocoDB\n\nSi acabas de agregar el rol "add" a la base de datos, asegúrate de agregarlo como opción en el campo "Rol" (tipo Select) en la configuración de la tabla de NocoDB.` },
-        { status: 400 }
-      );
+    // Crear usuario en InsForge Auth
+    const session = await insforgeSignUp(email, password, nombre);
+    if (!session) {
+      return NextResponse.json({ error: 'Error al crear usuario en InsForge' }, { status: 400 });
     }
 
-    return NextResponse.json({
-      mensaje: 'Usuario creado exitosamente'
+    // Verificar que no exista en tabla usuarios
+    const existentes = await dbQuery('usuarios', { 'email': `eq.${email}`, limit: 1 });
+    if (existentes.length > 0) {
+      return NextResponse.json({ error: 'Ya existe un usuario con este email' }, { status: 409 });
+    }
+
+    // Insertar en tabla usuarios con rol
+    await dbInsert('usuarios', {
+      email,
+      nombre,
+      rol,
+      estado: 'Activo',
+      fecha_creacion: new Date().toISOString(),
+      insforge_id: session.user?.id ?? null,
     });
+
+    return NextResponse.json({ mensaje: 'Usuario creado exitosamente' });
   } catch (error) {
     console.error('Error en registro:', error);
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
