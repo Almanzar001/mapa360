@@ -30,7 +30,7 @@ export async function insforgeSignOut(accessToken: string): Promise<void> {
 }
 
 export async function insforgeGetUser(accessToken: string): Promise<InsforgeUser | null> {
-  const res = await fetch(`${BASE_URL}/api/auth/users/me`, {
+  const res = await fetch(`${BASE_URL}/api/auth/sessions/current`, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
   });
   if (!res.ok) return null;
