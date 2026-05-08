@@ -16,12 +16,15 @@ RUN npm ci --ignore-scripts
 
 COPY . .
 
-# Environment variables must be present at build time
-# https://nextjs.org/docs/basic-features/environment-variables
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# Build the application
 ENV NODE_ENV=production
+
+# NEXT_PUBLIC_ vars must be embedded at build time
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+
 RUN npm run build
 
 # Production image, copy all the files and run next

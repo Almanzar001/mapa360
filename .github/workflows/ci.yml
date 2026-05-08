@@ -51,8 +51,8 @@ jobs:
       run: npm run build
       env:
         NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-        NOCODB_BASE_URL: ${{ secrets.NOCODB_BASE_URL }}
-        NOCODB_API_TOKEN: ${{ secrets.NOCODB_API_TOKEN }}
+        INSFORGE_URL: ${{ secrets.INSFORGE_URL }}
+        INSFORGE_API_KEY: ${{ secrets.INSFORGE_API_KEY }}
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
         
     - name: Build Docker image
