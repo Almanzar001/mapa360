@@ -26,10 +26,13 @@ export interface GoogleMapRef {
   tieneUbicacionUsuario: () => boolean;
 }
 
+const CENTRO_RD = { lat: 18.7357, lng: -70.1627 };
+const ZOOM_PAIS = 8;
+
 const GoogleMap = forwardRef<GoogleMapRef, GoogleMapProps>(({
   ubicaciones,
   onMarkerClick,
-  centro = { lat: 18.626560805395105, lng: -68.70765075761358 }, // Centro en la ubicación existente
+  centro = CENTRO_RD,
   className = 'w-full h-96',
   filtroCategoria = 'Todas',
   mostrarUbicacionUsuario = true,
@@ -64,7 +67,7 @@ const GoogleMap = forwardRef<GoogleMapRef, GoogleMapProps>(({
       try {
         const googleMap = new window.google.maps.Map(mapRef.current, {
           center: centroInicialRef.current,
-          zoom: 8,
+          zoom: ZOOM_PAIS,
           mapTypeId: 'roadmap',
           mapTypeControl: true,
           streetViewControl: true,
@@ -362,50 +365,21 @@ const GoogleMap = forwardRef<GoogleMapRef, GoogleMapProps>(({
 
     markersRef.current = newMarkers;
 
-    // Zoom inteligente: ajustar vista para mostrar todos los marcadores
-    // Se ejecuta la primera vez O cuando cambia el filtro de categoría
-    if (ubicacionesFiltradas.length > 0) {
-      const shouldAdjustZoom = !initialViewSetRef.current;
-
-      if (shouldAdjustZoom) {
-        if (ubicacionesFiltradas.length > 1) {
-          // Calcular el centro de todas las ubicaciones
-          const latSum = ubicacionesFiltradas.reduce((sum, u) => sum + u.latitud, 0);
-          const lngSum = ubicacionesFiltradas.reduce((sum, u) => sum + u.longitud, 0);
-          const centro = {
-            lat: latSum / ubicacionesFiltradas.length,
-            lng: lngSum / ubicacionesFiltradas.length
-          };
-
-          // Calcular la distancia máxima desde el centro
-          let maxDistance = 0;
-          ubicacionesFiltradas.forEach(ubicacion => {
-            const distance = Math.sqrt(
-              Math.pow(ubicacion.latitud - centro.lat, 2) +
-              Math.pow(ubicacion.longitud - centro.lng, 2)
-            );
-            if (distance > maxDistance) maxDistance = distance;
-          });
-
-          // Establecer zoom basado en la distancia máxima con niveles mejorados
-          let zoomLevel;
-          if (maxDistance < 0.005) zoomLevel = 15;     // Muy muy cerca (500m aprox)
-          else if (maxDistance < 0.01) zoomLevel = 14; // Muy cerca (1km aprox)
-          else if (maxDistance < 0.05) zoomLevel = 12; // Cerca (5km aprox)
-          else if (maxDistance < 0.1) zoomLevel = 11;  // Media distancia (10km aprox)
-          else if (maxDistance < 0.5) zoomLevel = 10;  // Lejos (50km aprox)
-          else if (maxDistance < 1.0) zoomLevel = 9;   // Muy lejos (100km aprox)
-          else zoomLevel = 8;                           // Extremadamente lejos
-
-          map.setCenter(centro);
-          map.setZoom(zoomLevel);
-        } else {
-          // Si solo hay una ubicación, centrar con zoom específico
-          map.setCenter({ lat: ubicacionesFiltradas[0].latitud, lng: ubicacionesFiltradas[0].longitud });
-          map.setZoom(15);
-        }
-
+    // Ajustar vista inicial para mostrar todas las ubicaciones
+    if (!initialViewSetRef.current) {
+      if (ubicacionesFiltradas.length === 1) {
+        map.setCenter({ lat: ubicacionesFiltradas[0].latitud, lng: ubicacionesFiltradas[0].longitud });
+        map.setZoom(15);
         initialViewSetRef.current = true;
+      } else if (ubicacionesFiltradas.length > 1) {
+        const bounds = new window.google.maps.LatLngBounds();
+        ubicacionesFiltradas.forEach(u => bounds.extend({ lat: u.latitud, lng: u.longitud }));
+        map.fitBounds(bounds, 60); // 60px de padding para que los marcadores no queden al borde
+        initialViewSetRef.current = true;
+      } else {
+        // Sin ubicaciones: mostrar el país completo
+        map.setCenter(CENTRO_RD);
+        map.setZoom(ZOOM_PAIS);
       }
     }
   }, [map, ubicaciones, filtroCategoria]);
